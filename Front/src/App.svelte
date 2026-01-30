@@ -147,7 +147,7 @@
   {:else}
     <nav class="navbar">
       <button class="brand-btn" on:click={() => irA('inicio')}>
-        AEREBETEL SYSTEM
+        BETHEL MOTORS
       </button>
       
       <div class="links">

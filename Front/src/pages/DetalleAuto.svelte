@@ -25,7 +25,7 @@
   
   <header class="public-header">
     <div class="brand">
-      <h1>AEREBETEL MOTORS</h1>
+      <h1>BETHEL MOTORS</h1>
       <p>Importacion Directa & Stock Disponible</p>
     </div>
     <button class="btn-login" on:click={irAlLogin}>
@@ -113,7 +113,7 @@
   </div>
 
   <footer class="public-footer">
-    <p>© 2026 AEREBETEL SYSTEM | Cochabamba, Bolivia</p>
+    <p>© 2026 BETHEL MOTORS | Cochabamba, Bolivia</p>
   </footer>
 
 </div>
