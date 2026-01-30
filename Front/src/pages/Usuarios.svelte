@@ -19,7 +19,8 @@
 
   async function cargarUsuarios() {
     try {
-      const res = await axios.get("http://localhost:3000/auth/users");
+      // CORREGIDO: Ruta relativa
+      const res = await axios.get("/auth/users");
       usuarios = res.data;
       cargando = false;
     } catch (error) {
@@ -74,14 +75,16 @@
     try {
       if (idEdicion) {
         // --- ACTUALIZAR (PUT) ---
-        await axios.put(`http://localhost:3000/auth/users/${idEdicion}`, nuevoUsuario);
+        // CORREGIDO: Ruta relativa
+        await axios.put(`/auth/users/${idEdicion}`, nuevoUsuario);
         Swal.fire({
             title: "Actualizado", text: "Datos del usuario modificados",
             icon: "success", confirmButtonColor: "#003366"
         });
       } else {
         // --- CREAR (POST) ---
-        await axios.post("http://localhost:3000/auth/register", nuevoUsuario);
+        // CORREGIDO: Ruta relativa
+        await axios.post("/auth/register", nuevoUsuario);
         Swal.fire({
             title: "Creado", text: "Usuario registrado correctamente",
             icon: "success", confirmButtonColor: "#003366"
@@ -122,7 +125,8 @@
 
     if (confirm.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:3000/auth/users/${id}`);
+        // CORREGIDO: Ruta relativa
+        await axios.delete(`/auth/users/${id}`);
         // Si borramos al que estabamos editando, limpiamos
         if (idEdicion === id) limpiarFormulario();
         

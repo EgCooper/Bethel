@@ -11,8 +11,12 @@
 
   onMount(async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/vehiculos");
+      // CORREGIDO: Ruta relativa (sin http://localhost:3000)
+      const res = await axios.get("/api/vehiculos");
+      
+      // Filtramos solo los disponibles para el público
       vehiculos = res.data.filter(v => v.estado === 'Disponible');
+      
       filtrar('Todos');
       cargando = false;
     } catch (error) {
@@ -32,7 +36,7 @@
     }
   }
 
-  // Ahora emitimos el evento para abrir el detalle
+  // Emitimos el evento para abrir el detalle
   function verDetalle(auto) {
     dispatch('verDetalle', auto);
   }
@@ -47,7 +51,7 @@
   <header class="public-header">
     <div class="brand">
       <h1>AEREBETEL MOTORS</h1>
-      <p>Importacion Directa y segura</p>
+      <p>Importacion Directa y Segura</p>
     </div>
     <button class="btn-login" on:click={irAlLogin}>
       🔒 Soy Asesor
@@ -55,11 +59,11 @@
   </header>
 
   <div class="hero-filters">
-    <h2>Encuentra tu proximo vehiculo</h2>
+    <h2>Encuentra tu próximo vehículo</h2>
     <div class="filter-buttons">
       <button class:active={filtroActual === 'Todos'} on:click={() => filtrar('Todos')}>Todos</button>
       <button class:active={filtroActual === 'Bolivia'} on:click={() => filtrar('Bolivia')}>🇧🇴 En Bolivia</button>
-      <button class:active={filtroActual === 'USA'} on:click={() => filtrar('USA')}>🇺🇸 Importacion (USA)</button>
+      <button class:active={filtroActual === 'USA'} on:click={() => filtrar('USA')}>🇺🇸 Importación (USA)</button>
     </div>
   </div>
 
@@ -67,7 +71,7 @@
     {#if cargando}
       <p class="loading">Cargando inventario...</p>
     {:else if vehiculosFiltrados.length === 0}
-      <div class="empty">No hay vehiculos disponibles en esta categoria.</div>
+      <div class="empty">No hay vehículos disponibles en esta categoría.</div>
     {:else}
       {#each vehiculosFiltrados as auto}
         <div class="card-public" on:click={() => verDetalle(auto)}>
@@ -108,8 +112,6 @@
 
   <footer class="public-footer">
     <p>© 2026 BETHEL SYSTEM | Cochabamba, Bolivia</p>
-    <p>© vpmora</p>
-
   </footer>
 
 </div>

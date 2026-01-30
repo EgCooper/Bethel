@@ -1,10 +1,10 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, createEventDispatcher } from "svelte";
   import axios from "axios";
   import Swal from "sweetalert2";
-  import {createEventDispatcher} from "svelte";
 
   const dispatch = createEventDispatcher();
+  
   let vehiculos = [];
   let cargando = true;
   let idEdicion = null; // Si tiene valor, estamos editando. Si es null, estamos creando.
@@ -29,11 +29,13 @@
   onMount(cargarInventario);
 
   function cotizarAuto(auto) {
-    dispatch('cotizar', { auto });
+    dispatch('cotizar', { auto }); // Enviamos el objeto auto correctamente
   }
+
   async function cargarInventario() {
     try {
-      const res = await axios.get("http://localhost:3000/api/vehiculos");
+      // CORREGIDO: Ruta relativa (sin http://localhost:3000)
+      const res = await axios.get("/api/vehiculos");
       vehiculos = res.data;
       cargando = false;
     } catch (error) {
@@ -44,11 +46,8 @@
 
   // --- FUNCIÓN PARA CARGAR DATOS EN EL FORMULARIO ---
   function cargarDatosEdicion(auto) {
-    // Llenamos el formulario con los datos del auto seleccionado
     nuevoAuto = { ...auto }; 
-    idEdicion = auto._id; // Activamos modo edición
-    
-    // Hacemos scroll hacia arriba suavemente para ver el formulario
+    idEdicion = auto._id; 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -64,7 +63,7 @@
       transmision: "Automatica", estado_vehiculo: "Usado",
       ubicacion: "USA (Subasta)", imagen_url: "", descripcion: ""
     };
-    idEdicion = null; // Volvemos a modo crear
+    idEdicion = null; 
   }
 
   async function guardarAuto() {
@@ -80,14 +79,16 @@
     try {
       if (idEdicion) {
         // --- MODO ACTUALIZAR (PUT) ---
-        await axios.put(`http://localhost:3000/api/vehiculos/${idEdicion}`, nuevoAuto);
+        // CORREGIDO: Ruta relativa
+        await axios.put(`/api/vehiculos/${idEdicion}`, nuevoAuto);
         Swal.fire({
           title: "Actualizado", text: "Datos del vehiculo modificados correctamente.",
           icon: "success", confirmButtonColor: "#003366"
         });
       } else {
         // --- MODO CREAR (POST) ---
-        await axios.post("http://localhost:3000/api/vehiculos", nuevoAuto);
+        // CORREGIDO: Ruta relativa
+        await axios.post("/api/vehiculos", nuevoAuto);
         Swal.fire({
           title: "Guardado", text: "Vehiculo agregado al inventario.",
           icon: "success", confirmButtonColor: "#003366"
@@ -119,8 +120,9 @@
 
     if (confirm.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:3000/api/vehiculos/${id}`);
-        // Si justo estabamos editando el que borramos, limpiamos el form
+        // CORREGIDO: Ruta relativa
+        await axios.delete(`/api/vehiculos/${id}`);
+        
         if (idEdicion === id) limpiarFormulario();
         
         cargarInventario();
@@ -276,7 +278,7 @@
                 </p>
 
                 <div class="acciones">
-                <button class="btn-icon btn-cotizar" title="Generar Cotización" on:click={() => cotizarAuto(auto)}>
+                  <button class="btn-icon btn-cotizar" title="Generar Cotización" on:click={() => cotizarAuto(auto)}>
                     Cotizar
                   </button>  
                   <button class="btn-icon btn-edit" title="Editar" on:click={() => cargarDatosEdicion(auto)}>

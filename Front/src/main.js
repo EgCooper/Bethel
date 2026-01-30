@@ -1,9 +1,10 @@
-import { mount } from 'svelte'
-import './app.css'
-import App from './App.svelte'
+import App from './App.svelte';
+import axios from 'axios';
 
-const app = mount(App, {
-  target: document.getElementById('app'),
-})
+axios.defaults.baseURL = 'https://bettel-backend.onrender.com'; 
 
-export default app
+const app = new App({
+	target: document.body
+});
+
+export default app;

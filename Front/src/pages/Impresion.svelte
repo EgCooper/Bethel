@@ -13,16 +13,18 @@
 
   onMount(async () => {
     try {
-      const res = await axios.get(`http://localhost:3000/api/cotizacion/${id}`);
+      // CORREGIDO: Ruta relativa para que funcione en Vercel/Render
+      const res = await axios.get(`/api/cotizacion/${id}`);
       cotizacion = res.data;
       cargando = false;
     } catch (error) {
       console.error(error);
-      alert("No se pudo cargar la cotización");
+      Swal.fire("Error", "No se pudo cargar la cotización. Intente nuevamente.", "error");
+      dispatch('volver'); // Si falla, volvemos atrás automáticamente
     }
   });
 
-  // --- 1. FUNCIÓN GENERAR PDF (AJUSTADA) ---
+  // --- 1. FUNCIÓN GENERAR PDF ---
   function descargarPDF() {
     const element = document.getElementById('contenido-pdf');
     
@@ -31,11 +33,10 @@
         : cotizacion.cliente.nombre;
     
     const opt = {
-      // AJUSTE CLAVE: Márgenes más pequeños para que quepa todo
-      margin:       [0.3, 0.3, 0.3, 0.3], // Arriba, Izquierda, Abajo, Derecha
+      margin:       [0.3, 0.3, 0.3, 0.3], 
       filename:     `Cotizacion_${nombreCliente}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, scrollY: 0 }, // scrollY: 0 evita cortes verticales
+      html2canvas:  { scale: 2, scrollY: 0 }, 
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
@@ -54,8 +55,9 @@
       return;
     }
 
-    telefono = telefono.replace(/\D/g, '');
+    telefono = telefono.replace(/\D/g, ''); // Quitamos símbolos no numéricos
 
+    // Asumimos código de país si falta
     if (telefono.length === 8) {
       telefono = '591' + telefono;
     }
@@ -72,15 +74,18 @@
 </script>
 
 {#if cargando}
-  <div class="loading">Cargando datos...</div>
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Generando vista previa...</p>
+  </div>
 {:else}
   
   <div class="contenedor-vista">
 
     <div class="acciones no-print">
-      <button class="btn-pdf" on:click={descargarPDF}> Descargar PDF</button>
-      <button class="btn-whatsapp" on:click={enviarWhatsapp}> Enviar WhatsApp</button>
-      <button class="btn-volver" on:click={regresar}> Volver</button>
+      <button class="btn-pdf" on:click={descargarPDF}>📄 Descargar PDF</button>
+      <button class="btn-whatsapp" on:click={enviarWhatsapp}>📱 Enviar WhatsApp</button>
+      <button class="btn-volver" on:click={regresar}>🔙 Volver</button>
     </div>
 
     <div id="contenido-pdf" class="hoja-impresion">
@@ -168,25 +173,26 @@
         <tfoot>
           <tr class="fila-total-usd">
             <td colspan="2">TOTAL ESTIMADO (DÓLARES)</td>
-            <td class="derecha">$ {cotizacion.totales.total_usd}</td>
+            <td class="derecha">$ {cotizacion.totales.total_usd.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
           </tr>
           <tr class="fila-total-bob">
             <td colspan="2">TOTAL EN BOLIVIANOS (T.C. {cotizacion.totales.tipo_cambio})</td>
-            <td class="derecha">Bs {cotizacion.totales.total_bob}</td>
+            <td class="derecha">Bs {cotizacion.totales.total_bob.toLocaleString('es-BO', {minimumFractionDigits: 2})}</td>
           </tr>
-          
         </tfoot>
       </table>
 
-     
       <div class="contacto-final">
         {#if cotizacion.asesor_id}
           <p>👨‍💼 Asesor: <strong>{cotizacion.asesor_id.nombre}</strong></p>
+          <p>📞 {cotizacion.asesor_id.telefono || 'Sin teléfono directo'}</p>
         {/if}
-        <a href="https://maps.app.goo.gl/Epxe47yRAEivie8JA" style="text-decoration: none;">📍 Cochabamba, Bolivia</a>
-        <p>📞 {cotizacion.asesor_id.telefono}</p>
-        <a href="https://www.facebook.com/profile.php?id=100063044990444" style="text-decoration: none;">  🌐 Bethel Importaciones</a>
+        <div class="links-footer">
+            <span>📍 Cochabamba, Bolivia</span>
+            <span>🌐 Bethel Importaciones</span>
+        </div>
       </div>
+
     </div>
   </div>
 {/if}
@@ -201,24 +207,21 @@
     align-items: center;
   }
 
-  /* ESTILOS DE LA HOJA (AJUSTADOS PARA CARTA) */
   .hoja-impresion {
     background: white;
     width: 100%;
-    /* 750px es un ancho seguro para Carta (8.5 pulgadas) */
     max-width: 750px; 
-    /* Reduje el padding para ganar espacio */
-    padding: 30px; 
+    padding: 40px; 
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
     font-family: 'Arial', sans-serif;
     color: #333;
     margin-bottom: 30px;
-    box-sizing: border-box; /* IMPORTANTE: Para que el padding no sume ancho extra */
+    box-sizing: border-box;
   }
 
   header { text-align: center; border-bottom: 3px solid #003366; padding-bottom: 20px; margin-bottom: 30px; }
   h1 { margin: 0; color: #003366; letter-spacing: 1px;}
-  h2 { margin: 5px 0; font-size: 1.2rem; background: #ff0000; display: inline-block; padding: 5px 15px; border-radius: 4px; color: #ffffff; }
+  h2 { margin: 10px 0; font-size: 1.2rem; background: #cc0000; display: inline-block; padding: 5px 15px; border-radius: 4px; color: #ffffff; }
   .fecha { font-size: 0.9rem; color: #555; margin-top: 5px; }
 
   .datos-grid { display: flex; gap: 20px; margin-bottom: 30px; }
@@ -234,12 +237,12 @@
   .subtotal td { font-weight: bold; background: #eef2f5; color: #555; }
   
   tfoot td { padding: 12px; font-weight: bold; font-size: 1.1rem; }
-  .fila-total-usd { background: #ff0000; color: #ffffff; }
+  .fila-total-usd { background: #cc0000; color: #ffffff; }
   .fila-total-bob { background: #003366; color: white; }
 
-  .observaciones { border-top: 2px solid #ccc; padding-top: 10px; font-size: 0.9rem; }
-  .observaciones h4 { color: #003366; margin-bottom: 5px; }
-  .observaciones ul { padding-left: 20px; }
+  /* FOOTER DEL PDF */
+  .contacto-final { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 0.9rem; color: #666; }
+  .links-footer { display: flex; gap: 20px; justify-content: center; margin-top: 10px; font-weight: bold; color: #003366; }
 
   /* BOTONES */
   .acciones { text-align: center; margin-bottom: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
@@ -257,11 +260,16 @@
   .btn-whatsapp:hover { background: #128C7E; }
   .btn-volver { background: white; color: #333; }
 
-  .loading { text-align: center; color: white; font-size: 1.5rem; margin-top: 50px; }
+  .loading { 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    height: 50vh; color: white; 
+  }
+  .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
   @media print {
     .no-print { display: none !important; }
     .contenedor-vista { background: white; padding: 0; }
-    .hoja-impresion { box-shadow: none; padding: 0; margin: 0; max-width: 100%; }
+    .hoja-impresion { box-shadow: none; padding: 0; margin: 0; max-width: 100%; border: none; }
   }
 </style>

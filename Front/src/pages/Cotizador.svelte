@@ -33,12 +33,9 @@
   }
 
   function llenarFormulario(datosRecibidos) {
-      // 1. DESEMPAQUETAR: Si viene dentro de "auto", lo sacamos. Si no, usamos lo que llegó.
       const auto = datosRecibidos.auto ? datosRecibidos.auto : datosRecibidos;
 
-      console.log("Datos procesados:", auto);
-
-      // 2. EXTRACCIÓN SEGURA DE DATOS
+      // EXTRACCIÓN SEGURA DE DATOS
       const marca = auto.marca || "Marca?";
       const modelo = auto.modelo || "Modelo?";
       const color = auto.color || "";
@@ -49,8 +46,6 @@
       const precio = auto.precio_usd || 0;
       const anio = auto.año || auto.anio || 2025;
 
-      // 3. CONSTRUCCIÓN DETALLADA (Aquí agregamos los extras que pediste)
-      // Ejemplo: "Yamaha R6 Negro Manual - 20000km (VIN: ...)"
       let detallesExtra = [color, trans, comb, km].filter(Boolean).join(" ");
       
       vehiculo = {
@@ -59,11 +54,10 @@
           vin_lote: vin
       };
 
-      // 4. COSTOS
       costos = {
           ...costos,
           precio_subasta: precio,
-          comision_gestion: 900, // Tus valores por defecto
+          comision_gestion: 900,
           tramites_aduana: 700
       };
   }
@@ -72,7 +66,8 @@
   onMount(async () => {
     if (idEdicion) {
       try {
-        const res = await axios.get(`http://localhost:3000/api/cotizacion/${idEdicion}`);
+        // CORREGIDO: Ruta relativa
+        const res = await axios.get(`/api/cotizacion/${idEdicion}`);
         const data = res.data;
         vehiculo = { ...data.vehiculo };
         costos = { ...data.costos };
@@ -97,7 +92,8 @@
   async function buscarClientes() {
     if (cliente.nombre.length < 2) { sugerencias = []; return; }
     try {
-      const res = await axios.get(`http://localhost:3000/api/clientes?busqueda=${cliente.nombre}`);
+      // CORREGIDO: Ruta relativa
+      const res = await axios.get(`/api/clientes?busqueda=${cliente.nombre}`);
       sugerencias = res.data;
       mostrandoSugerencias = true;
     } catch (e) { console.error(e); }
@@ -121,10 +117,12 @@
 
     try {
       if (idEdicion) {
-        await axios.put(`http://localhost:3000/api/cotizacion/${idEdicion}`, payload);
+        // CORREGIDO: Ruta relativa
+        await axios.put(`/api/cotizacion/${idEdicion}`, payload);
         dispatch('guardado', { id: idEdicion });
       } else {
-        const res = await axios.post("http://localhost:3000/api/cotizar", payload);
+        // CORREGIDO: Ruta relativa
+        const res = await axios.post("/api/cotizar", payload);
         dispatch('guardado', { id: res.data.id });
       }
       Swal.fire({ icon: 'success', title: 'Guardado', confirmButtonColor: '#003366' });

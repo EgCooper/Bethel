@@ -10,7 +10,9 @@
 
   async function handleLogin() {
     try {
-      const res = await axios.post("http://localhost:3000/auth/login", {
+      // CORREGIDO: Ruta relativa (sin http://localhost:3000)
+      // Axios usará la base URL configurada en main.js (Render)
+      const res = await axios.post("/auth/login", {
         username,
         password
       });
@@ -32,7 +34,7 @@
   }
 
   function irCatalogo() {
-    dispatch('irCatalogo'); // Avisamos a App.svelte que queremos ir al catálogo
+    dispatch('irCatalogo'); 
   }
 </script>
 
@@ -58,7 +60,7 @@
     <div class="divider"></div>
 
     <button class="btn-catalogo" on:click={irCatalogo}>
-      Regresar
+      Regresar al Catálogo
     </button>
 
   </div>
