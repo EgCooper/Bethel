@@ -50,7 +50,7 @@
   
   <header class="public-header">
     <div class="brand">
-      <h1>AEREBETEL MOTORS</h1>
+      <h1>BETHEL MOTORS</h1>
       <p>Importacion Directa y Segura</p>
     </div>
     <button class="btn-login" on:click={irAlLogin}>

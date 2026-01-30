@@ -185,28 +185,56 @@
 </div>
 
 <style>
-  .cotizador-wrapper { max-width: 1100px; margin: 0 auto; }
+  .cotizador-wrapper { max-width: 1100px; margin: 0 auto; padding-bottom: 40px; }
   .header-section { margin-bottom: 20px; text-align: center; color: #003366; }
+  
+  /* GRID PRINCIPAL: En PC 2 columnas, en Móvil 1 */
   .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  
   .column { display: flex; flex-direction: column; gap: 20px; }
   .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
-  h3 { margin-top: 0; color: #003366; font-size: 1.1rem; border-bottom: 2px solid #ff0000; padding-bottom: 8px; display: inline-block; }
+  
+  h3 { margin-top: 0; color: #003366; font-size: 1.1rem; border-bottom: 2px solid #ff0000; padding-bottom: 8px; display: inline-block; margin-bottom: 15px; }
+  
+  /* FILAS DE INPUTS */
   .row { display: flex; gap: 15px; margin-bottom: 10px; }
+  
   label { flex: 1; display: flex; flex-direction: column; font-size: 0.9rem; font-weight: 600; color: #555; }
-  input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; font-size: 1rem; }
+  input { padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; font-size: 1rem; }
+  
+  /* Colores especiales */
   .highlight-input { border-color: #ccc; background-color: #fffff0; }
-  .info-box { background: #f0f4f8; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #003366; }
+  .info-box { background: #f0f4f8; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #003366; font-weight: bold;}
+  
+  /* TARJETA TOTALES */
   .total-card { background: #003366; color: white; border: none; }
   .total-card h3 { color: white; border-bottom-color: white; }
   .total-card label { color: #ccc; }
   .total-card input { color: #000; font-weight: bold; text-align: center; background: #fff3cd; border: none; }
+  
   .totals-display { margin: 20px 0; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; }
   .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 1.1rem; }
-  .amount.usd { color: #ff6666; font-weight: bold; }
-  .amount.bob { color: white; font-weight: bold; }
-  .btn-save { width: 100%; padding: 15px; background: #ff0000; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-  .lista-sugerencias { position: absolute; top: 70px; left: 0; right: 0; background: white; border: 1px solid #ccc; z-index: 1000; max-height: 200px; overflow-y: auto; padding: 0; list-style: none; }
-  .lista-sugerencias li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
-  .lista-sugerencias li:hover { background: #f0f4f8; }
-  @media(max-width: 768px) { .grid-layout { grid-template-columns: 1fr; } }
+  .amount.usd { color: #ff6666; font-weight: bold; font-size: 1.3rem; }
+  .amount.bob { color: white; font-weight: bold; font-size: 1.2rem;}
+  
+  .btn-save { width: 100%; padding: 15px; background: #cc0000; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
+  
+  /* LISTA SUGERENCIAS */
+  .lista-sugerencias { position: absolute; top: 75px; left: 0; right: 0; background: white; border: 1px solid #ccc; z-index: 1000; max-height: 200px; overflow-y: auto; padding: 0; list-style: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .lista-sugerencias li { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
+  
+  /* --- ESTILOS RESPONSIVE PARA CELULAR --- */
+  @media (max-width: 768px) {
+    .grid-layout { grid-template-columns: 1fr; } /* Todo en 1 columna */
+    
+    .row { flex-direction: column; gap: 0; } /* Inputs uno debajo del otro */
+    
+    label { margin-bottom: 15px; } /* Más espacio entre inputs */
+    
+    input { font-size: 16px; } /* Evita zoom automático en iPhone */
+    
+    .card { padding: 15px; }
+    
+    .btn-save { position: sticky; bottom: 10px; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); } /* Botón guardar flotante o bien visible */
+  }
 </style>

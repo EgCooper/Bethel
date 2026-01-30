@@ -40,7 +40,7 @@
 
 <div class="login-container">
   <div class="login-card">
-    <h1 class="titulo">AEREBETEL SYSTEM</h1>
+    <h1 class="titulo">BETHEL SYSTEM</h1>
     <p class="subtitulo">Acceso Administrativo</p>
     
     <form on:submit|preventDefault={handleLogin}>

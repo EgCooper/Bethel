@@ -14,9 +14,7 @@
   import Impresion from "./pages/Impresion.svelte";
   import Historial from "./pages/Historial.svelte";
   import Inventario from "./pages/Inventario.svelte";
-  
-  // ⚠️ COMENTADO TEMPORALMENTE PARA DIAGNÓSTICO
-  // import Usuarios from "./pages/Usuarios.svelte";
+  import Usuarios from "./pages/Usuarios.svelte";
 
   // --- ESTADO ---
   let usuario = null; 
@@ -161,7 +159,8 @@
         <button class="nav-btn" on:click={() => irA('inventario')}>Inventario</button>
         
         {#if usuario.rol === 'admin'}
-          {/if}
+        <button class="nav-btn" on:click={() => irA('usuarios')}>Equipo</button>
+        {/if}
 
         <button class="nav-btn btn-salir" on:click={cerrarSesion}>Salir</button>
       </div>
