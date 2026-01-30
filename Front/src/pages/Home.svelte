@@ -2,7 +2,7 @@
   import { onMount, createEventDispatcher } from "svelte";
   import axios from "axios";
   
-  const dispatch = createEventDispatcher(); // Creamos el despachador
+  const dispatch = createEventDispatcher();
 
   let usuario = null;
   let esAdmin = false;
@@ -22,7 +22,6 @@
       esAdmin = usuario.rol === 'admin';
 
       try {
-        // CORREGIDO: Ruta relativa (sin http://localhost:3000)
         const res = await axios.get(`/api/dashboard-stats?rol=${usuario.rol}&usuario_id=${usuario.id}`);
         stats = res.data;
       } catch (error) {
