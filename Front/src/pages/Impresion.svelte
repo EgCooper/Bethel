@@ -112,8 +112,10 @@
           <p><strong>Año:</strong> {cotizacion.vehiculo.anio}</p>
         </div>
       </section>
-
+<div class="table-scroll">
       <table class="tabla-azul">
+
+        
         <thead>
           <tr>
             <th>Concepto</th>
@@ -181,6 +183,7 @@
           </tr>
         </tfoot>
       </table>
+</div>
 
       <div class="contacto-final">
         {#if cotizacion.asesor_id}
@@ -196,21 +199,22 @@
     </div>
   </div>
 {/if}
-
 <style>
+  /* --- CONTENEDOR PRINCIPAL (FONDO GRIS) --- */
   .contenedor-vista {
     background-color: #555;
-    padding: 30px;
+    padding: 20px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
+  /* --- LA HOJA DE PAPEL --- */
   .hoja-impresion {
     background: white;
     width: 100%;
-    max-width: 750px; 
+    max-width: 800px; /* Ancho máximo en PC */
     padding: 40px; 
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
     font-family: 'Arial', sans-serif;
@@ -219,57 +223,79 @@
     box-sizing: border-box;
   }
 
+  /* --- HEADER --- */
   header { text-align: center; border-bottom: 3px solid #003366; padding-bottom: 20px; margin-bottom: 30px; }
-  h1 { margin: 0; color: #003366; letter-spacing: 1px;}
-  h2 { margin: 10px 0; font-size: 1.2rem; background: #cc0000; display: inline-block; padding: 5px 15px; border-radius: 4px; color: #ffffff; }
+  h1 { margin: 0; color: #003366; letter-spacing: 1px; font-size: 1.8rem; }
+  h2 { margin: 10px 0; font-size: 1.1rem; background: #cc0000; display: inline-block; padding: 5px 15px; border-radius: 4px; color: #ffffff; }
   .fecha { font-size: 0.9rem; color: #555; margin-top: 5px; }
 
+  /* --- GRID DE DATOS (CLIENTE / VEHICULO) --- */
   .datos-grid { display: flex; gap: 20px; margin-bottom: 30px; }
   .box { flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9; }
   .box h3 { margin-top: 0; font-size: 1rem; color: #003366; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-  .box p { margin: 5px 0; font-size: 0.95rem; }
+  .box p { margin: 5px 0; font-size: 0.9rem; word-wrap: break-word; }
 
-  .tabla-azul { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-  .tabla-azul th { background: #003366; color: white; padding: 10px; text-align: left; }
-  .tabla-azul td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  /* --- TABLA --- */
+  .table-scroll { width: 100%; overflow-x: auto; } /* Permite scroll horizontal en móvil */
+  
+  .tabla-azul { width: 100%; border-collapse: collapse; margin-bottom: 30px; min-width: 500px; /* Fuerza ancho mínimo para que no se aplaste */ }
+  .tabla-azul th { background: #003366; color: white; padding: 10px; text-align: left; font-size: 0.9rem; }
+  .tabla-azul td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
   .tabla-azul .derecha { text-align: right; }
   
   .subtotal td { font-weight: bold; background: #eef2f5; color: #555; }
   
-  tfoot td { padding: 12px; font-weight: bold; font-size: 1.1rem; }
+  tfoot td { padding: 12px; font-weight: bold; font-size: 1rem; }
   .fila-total-usd { background: #cc0000; color: #ffffff; }
   .fila-total-bob { background: #003366; color: white; }
 
-  /* FOOTER DEL PDF */
+  /* --- FOOTER --- */
   .contacto-final { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 0.9rem; color: #666; }
-  .links-footer { display: flex; gap: 20px; justify-content: center; margin-top: 10px; font-weight: bold; color: #003366; }
+  .links-footer { display: flex; gap: 20px; justify-content: center; margin-top: 10px; font-weight: bold; color: #003366; flex-wrap: wrap; }
 
-  /* BOTONES */
-  .acciones { text-align: center; margin-bottom: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+  /* --- BOTONES DE ACCIÓN --- */
+  .acciones { text-align: center; margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; width: 100%; }
   
   button { 
-    padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; 
-    border-radius: 5px; font-size: 1rem; transition: transform 0.1s; 
+    padding: 12px 15px; border: none; cursor: pointer; font-weight: bold; 
+    border-radius: 5px; font-size: 0.9rem; transition: transform 0.1s; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 140px;
   }
   button:hover { transform: scale(1.05); }
   
   .btn-pdf { background: #ffcc00; color: #003366; }
   .btn-whatsapp { background: #25D366; color: white; }
-  .btn-whatsapp:hover { background: #128C7E; }
   .btn-volver { background: white; color: #333; }
 
-  .loading { 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    height: 50vh; color: white; 
-  }
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: white; }
   .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+  /* --- MODO CELULAR (RESPONSIVE) --- */
+  @media (max-width: 600px) {
+    .contenedor-vista { padding: 10px; } /* Menos borde gris */
+    .hoja-impresion { padding: 20px; width: 100%; } /* Hoja ocupa todo el ancho */
+    
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 0.9rem; }
+    
+    .datos-grid { flex-direction: column; gap: 10px; } /* Cajas una debajo de otra */
+    
+    /* En móvil, los botones se apilan */
+    .acciones { flex-direction: column; }
+    button { width: 100%; }
+    
+    /* Ajustes de fuente para que quepa */
+    .tabla-azul th, .tabla-azul td { font-size: 0.8rem; padding: 6px; }
+  }
+
+  /* --- MODO IMPRESIÓN / PDF REAL --- */
   @media print {
     .no-print { display: none !important; }
-    .contenedor-vista { background: white; padding: 0; }
-    .hoja-impresion { box-shadow: none; padding: 0; margin: 0; max-width: 100%; border: none; }
+    .contenedor-vista { background: white; padding: 0; margin: 0; }
+    .hoja-impresion { box-shadow: none; padding: 0; margin: 0; max-width: 100%; width: 100%; border: none; }
+    .table-scroll { overflow: visible; } /* En papel no hay scroll */
+    .tabla-azul { min-width: 100%; }
   }
 </style>
