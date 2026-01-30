@@ -14,7 +14,7 @@
   import Impresion from "./pages/Impresion.svelte";
   import Historial from "./pages/Historial.svelte";
   import Inventario from "./pages/Inventario.svelte";
-  import Usuarios from "./pages/Usuarios.svelte";
+  import Usuarios from "./pages/Usuarios.svelte"; // ✅ Importación correcta
 
   // --- ESTADO ---
   let usuario = null; 
@@ -147,7 +147,7 @@
   {:else}
     <nav class="navbar">
       <button class="brand-btn" on:click={() => irA('inicio')}>
-        BETHEL SYSTEM
+        AEREBETEL SYSTEM
       </button>
       
       <div class="links">
@@ -159,7 +159,7 @@
         <button class="nav-btn" on:click={() => irA('inventario')}>Inventario</button>
         
         {#if usuario.rol === 'admin'}
-        <button class="nav-btn" on:click={() => irA('usuarios')}>Equipo</button>
+          <button class="nav-btn" on:click={() => irA('usuarios')}>Equipo</button>
         {/if}
 
         <button class="nav-btn btn-salir" on:click={cerrarSesion}>Salir</button>
@@ -182,6 +182,9 @@
           on:ver={alVerDesdeHistorial} 
           on:editar={alEditarDesdeHistorial} 
         />
+      
+      {:else if paginaActual === 'usuarios'}
+        <Usuarios />
       
       {:else if paginaActual === 'inventario'}
         <Inventario on:cotizar={alCotizarDesdeInventario} />
