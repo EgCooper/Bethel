@@ -220,7 +220,7 @@
           <label>Ubicacion Actual</label>
           <select bind:value={nuevoAuto.ubicacion}>
             <option value="USA (Subasta)">USA (Subasta)</option>
-            <option value="Iquique (Transito)">Chile (Transito)</option>
+            <option value="Chile (Transito)">Chile (Transito)</option>
             <option value="Bolivia (Disponible)">Bolivia (Disponible)</option>
           </select>
         </div>
