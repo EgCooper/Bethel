@@ -261,7 +261,7 @@
                 
                 <span class="badge 
                   {auto.ubicacion.includes('Bolivia') ? 'bo' : 
-                   auto.ubicacion.includes('Iquique') ? 'cl' : 'usa'}">
+                   auto.ubicacion.includes('Chile') ? 'cl' : 'usa'}">
                   {auto.ubicacion}
                 </span>
               </div>
