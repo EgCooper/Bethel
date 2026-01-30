@@ -3,10 +3,10 @@
   import axios from "axios";
   import html2pdf from "html2pdf.js";
   import Swal from 'sweetalert2'; 
+  const dispatch = createEventDispatcher();
 
   export let id; 
   
-  const dispatch = createEventDispatcher();
 
   let cotizacion = null;
   let cargando = true;
