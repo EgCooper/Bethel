@@ -1,6 +1,5 @@
 <script>
-// @ts-nocheck
-
+  // @ts-nocheck
   import { onMount } from "svelte";
   import Swal from "sweetalert2";
   
@@ -14,15 +13,18 @@
   import Cotizador from "./pages/Cotizador.svelte";
   import Impresion from "./pages/Impresion.svelte";
   import Historial from "./pages/Historial.svelte";
-  import Usuarios from "./pages/Usuarios.svelte";
   import Inventario from "./pages/Inventario.svelte";
+  
+  // ⚠️ COMENTADO TEMPORALMENTE PARA DIAGNÓSTICO
+  // import Usuarios from "./pages/Usuarios.svelte";
 
   // --- ESTADO ---
   let usuario = null; 
   let mostrandoLogin = false; 
   let autoSeleccionado = null;
-  let autoParaCotizar = null; // Variable para pasar datos al cotizador
+  let autoParaCotizar = null; 
 
+  // --- CARGA INICIAL ---
   onMount(() => {
     const userGuardado = localStorage.getItem("usuario");
     if (userGuardado) {
@@ -30,13 +32,7 @@
     }
   });
 
-  // Función que recibe el auto del Inventario y nos manda al Cotizador
-  function alCotizarDesdeInventario(event) {
-    autoParaCotizar = event.detail; 
-    cotizacionIdParaEditar = null; // Limpiamos edición anterior si hubiera
-    paginaActual = 'cotizar';      // Cambiamos de vista
-  }
-
+  // --- LÓGICA DE SESIÓN ---
   function alLoguearse() {
     usuario = JSON.parse(localStorage.getItem("usuario"));
     paginaActual = 'inicio';
@@ -44,13 +40,13 @@
 
   function cerrarSesion() {
     Swal.fire({
-      title: 'Cerrar Sesion',
+      title: 'Cerrar Sesión',
       text: '¿Desea salir del sistema?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#ff0000', 
       cancelButtonColor: '#003366', 
-      confirmButtonText: 'Si, salir',
+      confirmButtonText: 'Sí, salir',
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
@@ -60,11 +56,12 @@
         mostrandoLogin = false; 
         autoSeleccionado = null;
         autoParaCotizar = null;
+        paginaActual = 'inicio';
       }
     });
   }
 
-  // --- NAVEGACIÓN PRIVADA ---
+  // --- NAVEGACIÓN ---
   let paginaActual = 'inicio'; 
   let cotizacionIdParaImprimir = null;
   let cotizacionIdParaEditar = null;
@@ -74,12 +71,12 @@
     if (paginaActual === 'cotizar' && destino !== 'cotizar' && destino !== 'impresion') {
       const result = await Swal.fire({
         title: 'Salir sin guardar',
-        text: "Perdera los datos del formulario actual.",
+        text: "Perderá los datos del formulario actual.",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff0000',
         cancelButtonColor: '#003366',
-        confirmButtonText: 'Si, salir',
+        confirmButtonText: 'Sí, salir',
         cancelButtonText: 'Permanecer'
       });
       if (!result.isConfirmed) return; 
@@ -87,12 +84,18 @@
     
     if (destino === 'cotizar') {
         cotizacionIdParaEditar = null;
-        autoParaCotizar = null; // Limpiamos si entra directo
+        autoParaCotizar = null; 
     } 
     paginaActual = destino;
   }
 
-  // Eventos Internos
+  // --- MANEJADORES DE EVENTOS ---
+  function alCotizarDesdeInventario(event) {
+    autoParaCotizar = event.detail; 
+    cotizacionIdParaEditar = null; 
+    paginaActual = 'cotizar';     
+  }
+
   function alGuardarCotizacion(event) {
     cotizacionIdParaImprimir = event.detail.id;
     rutaDeRetorno = cotizacionIdParaEditar ? 'historial' : 'inicio';
@@ -110,7 +113,6 @@
     paginaActual = 'cotizar'; 
   }
 
-  // Eventos Públicos (Catálogo)
   function abrirDetalleAuto(event) {
     autoSeleccionado = event.detail; 
   }
@@ -152,26 +154,16 @@
       
       <div class="links">
         <span class="usuario-badge">
-          Usuario: {usuario.nombre}
+          👤 {usuario.nombre}
         </span>
 
-        <button class="nav-btn" on:click={() => irA('inicio')} title="Ir al Inicio">
-           Inicio
-        </button>
-
-        <button class="nav-btn" on:click={() => irA('inventario')}>
-           Inventario
-        </button>
+        <button class="nav-btn" on:click={() => irA('inicio')}>Inicio</button>
+        <button class="nav-btn" on:click={() => irA('inventario')}>Inventario</button>
         
         {#if usuario.rol === 'admin'}
-          <button class="nav-btn" on:click={() => irA('usuarios')}>
-             Equipo
-          </button>
-        {/if}
+          {/if}
 
-        <button class="nav-btn btn-salir" on:click={cerrarSesion} title="Cerrar Sesion">
-           Salir
-        </button>
+        <button class="nav-btn btn-salir" on:click={cerrarSesion}>Salir</button>
       </div>
     </nav>
 
@@ -191,9 +183,6 @@
           on:ver={alVerDesdeHistorial} 
           on:editar={alEditarDesdeHistorial} 
         />
-      
-      {:else if paginaActual === 'usuarios'}
-        <Usuarios />
       
       {:else if paginaActual === 'inventario'}
         <Inventario on:cotizar={alCotizarDesdeInventario} />
@@ -227,19 +216,18 @@
     font-size: 0.9rem; background: rgba(255,255,255,0.15); 
     padding: 6px 15px; border-radius: 20px; 
     border: 1px solid rgba(255,255,255,0.2); 
-    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap;
   }
 
   .nav-btn { 
     background: transparent; border: none; color: white; font-size: 1rem; 
     cursor: pointer; padding: 8px 15px; border-radius: 6px; 
     transition: all 0.2s; font-weight: 500;
-    display: flex; align-items: center; gap: 6px;
   }
   .nav-btn:hover { background: rgba(255,255,255,0.1); }
   
   .btn-salir { 
-    background: #cc0000; color: white; font-weight: bold; padding: 8px 12px;
+    background: #cc0000; color: white; font-weight: bold; 
   }
   .btn-salir:hover { background: #ff3333; }
 
@@ -251,9 +239,9 @@
     :global(body) { background: white; } 
   }
   
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     .navbar { padding: 10px; flex-direction: column; gap: 10px; }
-    .links { width: 100%; justify-content: center; }
-    .usuario-badge { display: none; } 
+    .links { width: 100%; justify-content: center; flex-wrap: wrap; }
+    .usuario-badge { display: none; }
   }
 </style>
