@@ -1,0 +1,39 @@
+Fix for website bethel	
+
+#VISTA CLIENTE HOME
+
+-Agregar espacio en los botones del home de vista clientes
+-Agregar boton que seleccion solo los vehiculos que estan en chile
+-Implementar logo
+-Cambiar nombre de la pagina de pestana
+-Mejorar el footer
+
+#LOGIN
+
+-Incluir boton de return arriba a la izq
+-Agregar seguridad(contrasena min 8 caracteres)
+
+# ASESOR
+- Modificar dashboard
+- Incluir boton de acceso rapido para cotizar
+- Incluir funcion para seleccionar auto (se debe listar los que tenemos en inventario)
+- Incluir boton arriba a la izquierda para retroceder
+- 
+
+# ADMIN
+
+- Incluir mas detalles al momento de crear usuarios
+- Incluir mas seguridad (debe contener 8 caracteres la password)
+- Implementar funcion para deshabilitar cuenta 
+- 
+
+# IMPRESION
+- Implementar mas detalles del vehiculo
+
+- 
+# INVENTARIO
+
+- Implementar funcion para subir imagen
+- Incorporar boton para ver vehiculo
+- 
+
