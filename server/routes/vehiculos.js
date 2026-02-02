@@ -1,23 +1,23 @@
-const express = require('express');
-const router = express.Router();
-const Vehiculo = require('../models/Vehiculo');
-const verificarToken = require('../middleware/auth'); // Importante para saber quién es
+import express from 'express';
+// ⚠️ IMPORTANTE: En este modo, debes poner la extensión .js al final
+import Vehiculo from '../models/Vehiculo.js'; 
+import verificarToken from '../middleware/auth.js'; 
 
-// 1. OBTENER TODOS (PÚBLICO O PRIVADO)
+const router = express.Router();
+
+// 1. OBTENER TODOS
 router.get('/', async (req, res) => {
   try {
-    // --- CAMBIO CLAVE: .populate('asesor_id') trae los datos del usuario ---
     const vehiculos = await Vehiculo.find()
-      .populate('asesor_id', 'nombre telefono username') 
+      .populate('asesor_id', 'nombre telefono username')
       .sort({ fecha_creacion: -1 });
-      
     res.json(vehiculos);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener vehículos' });
   }
 });
 
-// 2. OBTENER UNO SOLO (POR ID)
+// 2. OBTENER UNO SOLO
 router.get('/:id', async (req, res) => {
   try {
     const vehiculo = await Vehiculo.findById(req.params.id)
@@ -29,12 +29,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. CREAR NUEVO (PROTEGIDO)
+// 3. CREAR NUEVO (Con ID de Asesor)
 router.post('/', verificarToken, async (req, res) => {
   try {
+    // Aquí asignamos el dueño automáticamente
     const nuevoAuto = new Vehiculo({
       ...req.body,
-      // --- CAMBIO CLAVE: Asignamos el dueño automáticamente ---
       asesor_id: req.user.id 
     });
     
@@ -45,10 +45,9 @@ router.post('/', verificarToken, async (req, res) => {
   }
 });
 
-// 4. ACTUALIZAR (PROTEGIDO)
+// 4. ACTUALIZAR
 router.put('/:id', verificarToken, async (req, res) => {
   try {
-    // Nota: No actualizamos el asesor_id aquí para que el dueño original se mantenga
     const autoActualizado = await Vehiculo.findByIdAndUpdate(
       req.params.id, 
       req.body, 
@@ -60,7 +59,7 @@ router.put('/:id', verificarToken, async (req, res) => {
   }
 });
 
-// 5. ELIMINAR (PROTEGIDO - SOLO ADMIN O DUEÑO)
+// 5. ELIMINAR
 router.delete('/:id', verificarToken, async (req, res) => {
   try {
     await Vehiculo.findByIdAndDelete(req.params.id);
@@ -70,4 +69,4 @@ router.delete('/:id', verificarToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

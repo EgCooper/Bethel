@@ -3,7 +3,8 @@
   const dispatch = createEventDispatcher();
 
   export let auto; 
-
+  console.log("DATOS DEL AUTO:", auto);
+  console.log("ASESOR ENCONTRADO:", auto.asesor_id);
   function volver() {
     dispatch('volver');
   }
