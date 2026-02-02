@@ -3,168 +3,206 @@
   import axios from "axios";
 
   const dispatch = createEventDispatcher();
-  
+
   let vehiculos = [];
   let vehiculosFiltrados = [];
   let cargando = true;
-  let filtroActual = 'Todos';
+  let filtroActual = 'todos'; // 'todos', 'bolivia', 'usa', 'chile'
+  let busqueda = "";
 
-  onMount(async () => {
+  onMount(cargarCatalogo);
+
+  async function cargarCatalogo() {
     try {
-      // CORREGIDO: Ruta relativa (sin http://localhost:3000)
       const res = await axios.get("/api/vehiculos");
-      
-      // Filtramos solo los disponibles para el público
-      vehiculos = res.data.filter(v => v.estado === 'Disponible');
-      
-      filtrar('Todos');
+      vehiculos = res.data;
+      filtrarVehiculos();
       cargando = false;
     } catch (error) {
-      console.error(error);
+      console.error("Error cargando catálogo:", error);
       cargando = false;
     }
-  });
+  }
 
-  function filtrar(criterio) {
-    filtroActual = criterio;
-    if (criterio === 'Todos') {
-      vehiculosFiltrados = vehiculos;
-    } else if (criterio === 'Bolivia') {
-      vehiculosFiltrados = vehiculos.filter(v => v.ubicacion.includes('Bolivia'));
-    } else if (criterio === 'USA') {
-      vehiculosFiltrados = vehiculos.filter(v => v.ubicacion.includes('USA'));
+  function cambiarFiltro(nuevoFiltro) {
+    filtroActual = nuevoFiltro;
+    filtrarVehiculos();
+  }
+
+  function filtrarVehiculos() {
+    let resultado = vehiculos;
+
+    // 1. Filtro por Ubicación
+    if (filtroActual === 'bolivia') {
+      resultado = resultado.filter(v => v.ubicacion.includes('Bolivia'));
+    } else if (filtroActual === 'usa') {
+      resultado = resultado.filter(v => v.ubicacion.includes('USA'));
+    } else if (filtroActual === 'chile') {
+      resultado = resultado.filter(v => v.ubicacion.includes('Iquique') || v.ubicacion.includes('Chile'));
     }
+
+    // 2. Filtro por Buscador (Marca, Modelo o Año)
+    if (busqueda.trim() !== "") {
+      const texto = busqueda.toLowerCase();
+      resultado = resultado.filter(v => 
+        v.marca.toLowerCase().includes(texto) || 
+        v.modelo.toLowerCase().includes(texto) ||
+        v.año.toString().includes(texto) ||
+        v.vin.toLowerCase().includes(texto)
+      );
+    }
+
+    vehiculosFiltrados = resultado;
   }
 
-  // Emitimos el evento para abrir el detalle
   function verDetalle(auto) {
-    dispatch('verDetalle', auto);
+    dispatch('verDetalle', { ...auto });
   }
 
-  function irAlLogin() {
+  function irLogin() {
     dispatch('irLogin');
   }
 </script>
 
-<div class="public-container">
+<div class="catalogo-wrapper">
   
-  <header class="public-header">
-    <div class="brand">
-      <h1>BETHEL MOTORS</h1>
-      <p>Importacion Directa y Segura</p>
+  <header class="hero">
+    <div class="hero-content">
+      <h1>AEREBETEL MOTORS</h1>
+      <p>Tu mejor opción en importación de vehículos</p>
+      <div class="search-bar">
+        <input 
+          type="text" 
+          placeholder="Buscar por marca, modelo o año..." 
+          bind:value={busqueda}
+          on:input={filtrarVehiculos}
+        />
+        <button class="btn-search">🔍</button>
+      </div>
     </div>
-    <button class="btn-login" on:click={irAlLogin}>
-      🔒 Soy Asesor
-    </button>
+    <button class="btn-acceso" on:click={irLogin}>Soy Asesor</button>
   </header>
 
-  <div class="hero-filters">
-    <h2>Encuentra tu próximo vehículo</h2>
-    <div class="filter-buttons">
-      <button class:active={filtroActual === 'Todos'} on:click={() => filtrar('Todos')}>Todos</button>
-      <button class:active={filtroActual === 'Bolivia'} on:click={() => filtrar('Bolivia')}>🇧🇴 En Bolivia</button>
-      <button class:active={filtroActual === 'USA'} on:click={() => filtrar('USA')}>🇺🇸 Importación (USA)</button>
-    </div>
-  </div>
+  <nav class="filtros">
+    <button class="{filtroActual === 'todos' ? 'activo' : ''}" on:click={() => cambiarFiltro('todos')}>
+      Todo el Stock
+    </button>
+    <button class="{filtroActual === 'bolivia' ? 'activo' : ''}" on:click={() => cambiarFiltro('bolivia')}>
+      🇧🇴 En Bolivia
+    </button>
+    <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>
+      🇨🇱 En Tránsito (Iquique)
+    </button>
+    <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>
+      🇺🇸 Subasta USA
+    </button>
+  </nav>
 
-  <div class="catalog-grid">
+  <div class="grid-autos">
     {#if cargando}
-      <p class="loading">Cargando inventario...</p>
+      <p class="mensaje">Cargando inventario...</p>
     {:else if vehiculosFiltrados.length === 0}
-      <div class="empty">No hay vehículos disponibles en esta categoría.</div>
+      <div class="mensaje-vacio">
+        <p>No se encontraron vehículos con estos criterios.</p>
+      </div>
     {:else}
       {#each vehiculosFiltrados as auto}
-        <div class="card-public" on:click={() => verDetalle(auto)}>
+        <div class="card" on:click={() => verDetalle(auto)}>
           <div class="img-wrapper">
             {#if auto.imagen_url}
-              <img src={auto.imagen_url} alt={auto.modelo}>
+              <img src={auto.imagen_url} alt={auto.modelo} loading="lazy">
             {:else}
               <div class="no-img">Sin Foto</div>
             {/if}
             
-            <span class="badge {auto.ubicacion.includes('Bolivia') ? 'bo' : 'usa'}">
+            <span class="badge 
+              {auto.ubicacion.includes('Bolivia') ? 'bo' : 
+               auto.ubicacion.includes('Iquique') ? 'cl' : 'usa'}">
               {auto.ubicacion}
             </span>
           </div>
-
-          <div class="details">
+          
+          <div class="card-info">
             <h3>{auto.marca} {auto.modelo}</h3>
-            <div class="specs">
-              <span>{auto.año}</span> • <span>{auto.transmision}</span> • <span>{auto.tipo_combustible}</span>
+            <p class="anio">{auto.año}</p>
+            <div class="detalles">
+              <span>{auto.transmision}</span> • <span>{auto.tipo_combustible}</span>
             </div>
-            
-            <div class="price-block">
-              <span class="currency">USD</span>
-              <span class="amount">{auto.precio_usd.toLocaleString('en-US')}</span>
-              {#if auto.ubicacion.includes('USA')}
-                <span class="aprox">(Ref)</span>
-              {/if}
-            </div>
-
-            <button class="btn-contact">
-               Ver Detalles Completos
-            </button>
+            <p class="precio">$ {auto.precio_usd.toLocaleString('en-US')}</p>
+            <button class="btn-ver">Ver Detalles</button>
           </div>
         </div>
       {/each}
     {/if}
   </div>
 
-  <footer class="public-footer">
-    <p>© 2026 BETHEL SYSTEM | Cochabamba, Bolivia</p>
+  <footer class="footer">
+    <p>© 2026 AEREBETEL MOTORS | Cochabamba - Bolivia</p>
   </footer>
 
 </div>
 
 <style>
-  .public-container { background: #f9f9f9; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-  
-  .public-header { 
-    background: #003366; color: white; padding: 15px 30px; 
-    display: flex; justify-content: space-between; align-items: center; 
-  }
-  .brand h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
-  .brand p { margin: 0; font-size: 0.8rem; opacity: 0.8; }
-  
-  .btn-login { 
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); 
-    color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; transition: 0.3s; 
-  }
-  .btn-login:hover { background: white; color: #003366; }
+  .catalogo-wrapper { background: #f4f4f9; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
 
-  .hero-filters { text-align: center; padding: 40px 20px; background: white; border-bottom: 1px solid #eee; }
-  .hero-filters h2 { color: #333; margin-top: 0; margin-bottom: 20px; }
-  
-  .filter-buttons button {
-    background: white; border: 1px solid #ccc; color: #555;
-    padding: 10px 20px; margin: 0 5px; border-radius: 25px; cursor: pointer; font-weight: bold;
-    transition: all 0.2s;
+  /* HERO HEADER */
+  .hero { 
+    background: linear-gradient(135deg, #003366 0%, #001a33 100%); 
+    color: white; padding: 40px 20px; text-align: center; position: relative;
   }
-  .filter-buttons button.active { background: #003366; color: white; border-color: #003366; transform: scale(1.05); }
-
-  .catalog-grid { max-width: 1200px; margin: 30px auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 0 20px; }
+  .hero h1 { margin: 0; font-size: 2.5rem; letter-spacing: 2px; }
+  .hero p { margin: 10px 0 20px 0; color: #ccc; }
   
-  .card-public { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08); transition: transform 0.3s; cursor: pointer; }
-  .card-public:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
+  .btn-acceso { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; }
+  .btn-acceso:hover { background: white; color: #003366; }
 
-  .img-wrapper { height: 200px; position: relative; background: #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  /* BUSCADOR */
+  .search-bar { display: flex; max-width: 500px; margin: 0 auto; background: white; border-radius: 30px; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+  .search-bar input { flex: 1; border: none; padding: 10px 20px; border-radius: 30px; outline: none; font-size: 1rem; }
+  .btn-search { background: #cc0000; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  /* FILTROS NAV */
+  .filtros { display: flex; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; padding: 0 10px; }
+  .filtros button { 
+    background: white; border: 1px solid #ddd; padding: 8px 16px; 
+    border-radius: 20px; cursor: pointer; font-weight: 500; color: #555; transition: 0.2s; 
+  }
+  .filtros button.activo { background: #003366; color: white; border-color: #003366; }
+  .filtros button:hover:not(.activo) { background: #eee; }
+
+  /* GRID DE AUTOS */
+  .grid-autos { 
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+    gap: 25px; max-width: 1200px; margin: 0 auto; padding: 20px; 
+  }
+  
+  .card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.08); transition: transform 0.2s; cursor: pointer; }
+  .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+
+  .img-wrapper { height: 180px; background: #eee; position: relative; }
   .img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-  
-  .badge { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  .no-img { height: 100%; display: flex; align-items: center; justify-content: center; color: #888; font-weight: bold; }
+
+  /* BADGES */
+  .badge { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 4px; color: white; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
   .badge.bo { background: #28a745; }
   .badge.usa { background: #003366; }
+  .badge.cl { background: #ff9900; } /* Naranja para Iquique */
 
-  .details { padding: 20px; text-align: center; }
-  .details h3 { margin: 0; color: #333; font-size: 1.1rem; }
-  .specs { color: #777; font-size: 0.85rem; margin: 5px 0 15px 0; }
+  .card-info { padding: 15px; text-align: center; }
+  .card-info h3 { margin: 0; font-size: 1.1rem; color: #333; }
+  .anio { color: #888; margin: 5px 0; font-size: 0.9rem; }
+  .detalles { color: #666; font-size: 0.85rem; margin-bottom: 10px; }
+  .precio { font-size: 1.3rem; font-weight: bold; color: #003366; margin-bottom: 10px; }
   
-  .price-block { margin-bottom: 15px; color: #003366; }
-  .amount { font-size: 1.5rem; font-weight: bold; }
-  .aprox { font-size: 0.8rem; color: #666; background: #eee; padding: 2px 5px; border-radius: 4px; }
+  .btn-ver { background: #003366; color: white; border: none; width: 100%; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+  .btn-ver:hover { background: #002244; }
 
-  .btn-contact { width: 100%; background: #003366; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
-  .btn-contact:hover { background: #002244; }
+  .mensaje, .mensaje-vacio { text-align: center; width: 100%; padding: 50px; color: #777; grid-column: 1 / -1; }
+  .footer { text-align: center; padding: 20px; color: #aaa; font-size: 0.85rem; margin-top: 20px; }
 
-  .loading, .empty { text-align: center; padding: 50px; color: #777; width: 100%; grid-column: 1 / -1; }
-  .public-footer { text-align: center; padding: 30px; color: #aaa; font-size: 0.9rem; margin-top: 50px; border-top: 1px solid #eee; }
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 1.8rem; }
+    .grid-autos { grid-template-columns: 1fr; }
+  }
 </style>
