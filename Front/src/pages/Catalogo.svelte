@@ -91,7 +91,7 @@
       🇧🇴 En Bolivia
     </button>
     <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>
-      🇨🇱 En Tránsito (Iquique)
+      🇨🇱 En Chile
     </button>
     <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>
       🇺🇸 Subasta USA
