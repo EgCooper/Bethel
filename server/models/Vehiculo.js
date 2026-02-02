@@ -15,7 +15,7 @@ const vehiculoSchema = new mongoose.Schema({
   ubicacion: { 
       type: String, 
       required: true, 
-      enum: ['USA (Subasta)', 'Bolivia (Disponible)', 'Iquique (Transito)'] 
+      enum: ['USA (Subasta)', 'Bolivia (Disponible)', 'Chile (Transito)'] 
   },
   
   imagen_url: { type: String },
