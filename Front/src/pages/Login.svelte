@@ -10,8 +10,7 @@
 
   async function handleLogin() {
     try {
-      // CORREGIDO: Ruta relativa (sin http://localhost:3000)
-      // Axios usará la base URL configurada en main.js (Render)
+
       const res = await axios.post("/auth/login", {
         username,
         password

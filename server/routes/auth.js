@@ -6,7 +6,7 @@ import Usuario from '../models/Usuario.js'; // ⚠️ Importante: .js al final
 const router = express.Router();
 
 // CLAVE SECRETA (Idealmente en .env)
-const JWT_SECRET = 'clave_super_secreta_aerebetel_2026';
+const JWT_SECRET = 'Cooperino9090!';
 
 // --- 1. REGISTRAR USUARIO ---
 router.post('/register', async (req, res) => {
@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
                 nombre: usuario.nombre,
                 username: usuario.username,
                 rol: usuario.rol,
-                telefono: usuario.telefono // <--- IMPORTANTE: Enviarlo al frontend
+                telefono: usuario.telefono
             }
         });
 
