@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'; // Usamos import
+import mongoose from 'mongoose';
 
 const vehiculoSchema = new mongoose.Schema({
   marca: { type: String, required: true },

@@ -10,7 +10,7 @@ const UsuarioSchema = new mongoose.Schema({
         required: true, 
         unique: true 
     },
-    telefono:{
+    telefono: {
         type: String,
         default: '',
     },
@@ -29,4 +29,5 @@ const UsuarioSchema = new mongoose.Schema({
     }
 });
 
+// Exportamos usando la sintaxis moderna (ES Modules)
 export default mongoose.model('Usuario', UsuarioSchema);

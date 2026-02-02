@@ -1,7 +1,6 @@
 import express from 'express';
-// ⚠️ IMPORTANTE: En este modo, debes poner la extensión .js al final
 import Vehiculo from '../models/Vehiculo.js'; 
-import verificarToken from '../middleware/auth.js'; 
+import verificarToken from '../'; 
 
 const router = express.Router();
 
