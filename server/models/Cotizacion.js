@@ -32,7 +32,7 @@ const cotizacionSchema = new mongoose.Schema({
         flete_maritimo: { type: Number, default: 0 },
         transporte_terrestre: { type: Number, default: 0 },
         
-        // 5. Operativo Aerebetel
+        // 5. Operativo 
         comision_gestion: { type: Number, default: 900 }, // Tu ganancia
         tramites_aduana: { type: Number, default: 700 },
         

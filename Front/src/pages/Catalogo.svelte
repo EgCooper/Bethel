@@ -68,7 +68,7 @@
   
   <header class="hero">
     <div class="hero-content">
-      <h1>AEREBETEL MOTORS</h1>
+      <h1>BETHEL MOTORS</h1>
       <p>Tu mejor opción en importación de vehículos</p>
       <div class="search-bar">
         <input 
@@ -137,7 +137,7 @@
   </div>
 
   <footer class="footer">
-    <p>© 2026 AEREBETEL MOTORS | Cochabamba - Bolivia</p>
+    <p>© 2026 BETHEL MOTORS | Cochabamba - Bolivia</p>
   </footer>
 
 </div>

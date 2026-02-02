@@ -20,7 +20,7 @@
 
     // 2. Variables iniciales
     let telefonoDestino = numeroCentral;
-    let nombreDestino = "Aerebetel";
+    let nombreDestino = "Bethel";
     
     // 3. Verificamos si hay un asesor asignado con teléfono
     if (auto.asesor_id && auto.asesor_id.telefono) {
@@ -48,7 +48,7 @@
   
   <header class="public-header">
     <div class="brand">
-      <h1>AEREBETEL MOTORS</h1>
+      <h1>BETHEL MOTORS</h1>
       <p>Importacion Directa & Stock Disponible</p>
     </div>
     <button class="btn-login" on:click={irAlLogin}>
@@ -142,7 +142,7 @@
   </div>
 
   <footer class="public-footer">
-    <p>© 2026 AEREBETEL MOTORS | Cochabamba, Bolivia</p>
+    <p>© 2026 BETHEL MOTORS | Cochabamba, Bolivia</p>
   </footer>
 
 </div>
