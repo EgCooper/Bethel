@@ -4,19 +4,41 @@
 
   export let auto; 
 
-
   function volver() {
     dispatch('volver');
   }
 
   function irAlLogin() {
-    dispatch('irLogin'); // Enviamos evento para ir al login desde aquí también
+    dispatch('irLogin');
   }
 
   function contactar() {
-    const telefono = "59162512418"; 
-    const mensaje = `Hola, estoy viendo la ficha tecnica del ${auto.marca} ${auto.modelo} ${auto.año} (VIN: ${auto.vin}) y quiero mas informacion.`;
-    const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+    // 1. Definimos un número por defecto (Gerencia/Central)
+    // Úsalo si el auto es antiguo y no tiene dueño asignado
+    const numeroCentral = "59162512418"; 
+
+    // 2. Variables iniciales
+    let telefonoDestino = numeroCentral;
+    let nombreDestino = "Aerebetel";
+    
+    // 3. Verificamos si hay un asesor asignado con teléfono
+    if (auto.asesor_id && auto.asesor_id.telefono) {
+        telefonoDestino = auto.asesor_id.telefono;
+        nombreDestino = auto.asesor_id.nombre;
+    }
+
+    // 4. Limpiamos el número (quitamos espacios, guiones, símbolos)
+    telefonoDestino = telefonoDestino.replace(/\D/g, '');
+    
+    // 5. Si falta el código de país (Bolivia 591), lo agregamos
+    if (telefonoDestino.length === 8) {
+        telefonoDestino = '591' + telefonoDestino;
+    }
+
+    // 6. Mensaje Personalizado
+    const mensaje = `Hola *${nombreDestino}*, vi el *${auto.marca} ${auto.modelo} ${auto.año}* (Ref: ${auto.vin.slice(-6)}) en la web y me interesa. ¿Sigue disponible?`;
+    
+    const url = `https://wa.me/${telefonoDestino}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
   }
 </script>
@@ -25,7 +47,7 @@
   
   <header class="public-header">
     <div class="brand">
-      <h1>BETHEL MOTORS</h1>
+      <h1>AEREBETEL MOTORS</h1>
       <p>Importacion Directa & Stock Disponible</p>
     </div>
     <button class="btn-login" on:click={irAlLogin}>
@@ -67,6 +89,12 @@
           <button class="btn-whatsapp" on:click={contactar}>
              Me interesa este vehiculo
           </button>
+
+          {#if auto.asesor_id && auto.asesor_id.nombre}
+            <p class="asesor-info">
+              <small>Atendido por: <strong>{auto.asesor_id.nombre}</strong></small>
+            </p>
+          {/if}
         </div>
       </div>
 
@@ -113,7 +141,7 @@
   </div>
 
   <footer class="public-footer">
-    <p>© 2026 BETHEL MOTORS | Cochabamba, Bolivia</p>
+    <p>© 2026 AEREBETEL MOTORS | Cochabamba, Bolivia</p>
   </footer>
 
 </div>
@@ -163,6 +191,8 @@
 
   .btn-whatsapp { background: #003366; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
   .btn-whatsapp:hover { background: #002244; }
+  
+  .asesor-info { margin-top: 10px; color: #666; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 10px; }
 
   /* INFO TEXTO */
   .info-section h1 { margin: 0; color: #333; font-size: 2.2rem; line-height: 1.2; }
