@@ -55,7 +55,7 @@
     <div class="brand">
       <span class="logo-icon">🏎️</span>
       <div>
-        <h1>AEREBETEL</h1>
+        <h1>BETHEL MOTORS</h1>
         <small>Premium Motors</small>
       </div>
     </div>
@@ -191,7 +191,7 @@
   </main>
 
   <footer class="footer">
-    <p>© 2026 AEREBETEL MOTORS | Cochabamba - Bolivia</p>
+    <p>© 2026 BETHEL MOTORS | Cochabamba - Bolivia</p>
   </footer>
 
 </div>
