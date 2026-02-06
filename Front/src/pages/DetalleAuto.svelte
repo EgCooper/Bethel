@@ -2,19 +2,16 @@
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
 
-  export let auto; // Recibimos el auto seleccionado
+  export let auto; 
 
-  // --- 1. LÓGICA DE GALERÍA DE IMÁGENES ---
-  // Detectamos si tiene galería nueva o foto vieja
+  // --- LÓGICA (Mantenemos la que ya funciona) ---
   let tieneGaleria = auto.imagenes && auto.imagenes.length > 0;
-  // La imagen grande empieza siendo la primera de la lista o la antigua
   let imagenGrande = tieneGaleria ? auto.imagenes[0] : (auto.imagen_url || '');
 
   function cambiarImagen(img) {
     imagenGrande = img;
   }
 
-  // --- 2. LÓGICA DE PRECIO SEGURO (ANTI-CRASH) ---
   function formatearPrecio() {
     let valor = auto.precio || auto.precio_usd;
     if (!valor) return "0";
@@ -27,254 +24,270 @@
     return auto.moneda || 'USD';
   }
 
-  // --- 3. NAVEGACIÓN ---
-  function volver() {
-    dispatch('volver');
-  }
+  function volver() { dispatch('volver'); }
+  function irAlLogin() { dispatch('irLogin'); }
 
-  function irAlLogin() {
-    dispatch('irLogin');
-  }
-
-  // --- 4. WHATSAPP INTELIGENTE ---
   function contactar() {
-    // A. Número por defecto (Central de Bethel)
-    let telefonoDestino = "59162512418"; // Pon tu número central aquí
+    let telefonoDestino = "59162512418"; // Tu central
     let nombreDestino = "Bethel Motors";
     
-    // B. Si el auto tiene un asesor asignado, usamos sus datos
     if (auto.asesor_id && auto.asesor_id.telefono) {
         telefonoDestino = auto.asesor_id.telefono;
         nombreDestino = auto.asesor_id.nombre;
     }
 
-    // Limpieza del número
-    telefonoDestino = telefonoDestino.replace(/\D/g, ''); // Solo números
+    telefonoDestino = telefonoDestino.replace(/\D/g, '');
     if (telefonoDestino.length === 8) telefonoDestino = '591' + telefonoDestino;
 
-    // Mensaje con salto de línea (%0A)
-    const mensaje = `Hola *${nombreDestino}*, me interesa el vehículo de la web:%0A%0A` +
+    const mensaje = `Hola *${nombreDestino}*, estoy interesado en:%0A%0A` +
                     `🚘 *${auto.marca} ${auto.modelo} ${auto.año}*%0A` +
                     `💰 Precio: ${formatearPrecio()} ${obtenerMoneda()}%0A` +
-                    `📍 Ubicación: ${auto.ubicacion}%0A` +
-                    `🆔 Ref: ${auto.vin ? auto.vin.slice(-6) : 'N/A'}%0A%0A` +
-                    `¿Sigue disponible?`;
+                    `🆔 Ref: ${auto.vin ? auto.vin.slice(-6) : 'N/A'}%0A` +
+                    `¿Me podría dar más información?`;
     
-    const url = `https://wa.me/${telefonoDestino}?text=${mensaje}`; // No uses encodeURIComponent completo aquí si usas %0A manuales
-    window.open(url, '_blank');
+    window.open(`https://wa.me/${telefonoDestino}?text=${mensaje}`, '_blank');
   }
 </script>
 
 <div class="page-wrapper">
   
-  <header class="public-header">
+  <header class="navbar">
     <div class="brand">
-      <h1>BETHEL MOTORS</h1>
-      <p>Importación Directa & Stock Disponible</p>
+      <span class="logo-icon">🏎️</span>
+      <div>
+        <h1>AEREBETEL</h1>
+        <small>Premium Motors</small>
+      </div>
     </div>
-    <button class="btn-login" on:click={irAlLogin}>
-      🔒 Soy Asesor
-    </button>
+    <button class="btn-ghost" on:click={irAlLogin}>Soy Asesor 🔒</button>
   </header>
 
-  <div class="detalle-container">
+  <main class="container">
     
-    <div class="top-bar">
-      <button class="btn-volver" on:click={volver}>
-         &larr; Volver al Catálogo
-      </button>
-    </div>
+    <nav class="breadcrumb">
+      <button on:click={volver}>&larr; Volver al Inventario</button>
+      <span class="separator">/</span>
+      <span class="current">{auto.marca} {auto.modelo}</span>
+    </nav>
 
-    <div class="ficha-layout">
+    <div class="grid-layout">
       
-      <div class="media-section">
-        
-        <div class="img-container">
+      <section class="gallery-section">
+        <div class="main-image-frame">
           {#if imagenGrande}
-            <img src={imagenGrande} alt={auto.modelo}>
+            <img src={imagenGrande} alt={auto.modelo} class="main-img">
           {:else}
-            <div class="no-img">Sin Imagen Disponible</div>
+            <div class="placeholder-img">
+                <span>📷 Sin Fotografía</span>
+            </div>
           {/if}
           
-          <span class="etiqueta-estado {auto.ubicacion.includes('Bolivia') ? 'bo' : auto.ubicacion.includes('Iquique') ? 'cl' : 'usa'}">
-            {auto.ubicacion}
-          </span>
+          <div class="badges-overlay">
+            <span class="badge-status {auto.ubicacion.includes('Bolivia') ? 'bo' : auto.ubicacion.includes('Iquique') ? 'cl' : 'usa'}">
+                📍 {auto.ubicacion}
+            </span>
+          </div>
         </div>
 
         {#if tieneGaleria && auto.imagenes.length > 1}
-            <div class="thumbnails">
+            <div class="thumbnails-scroll">
                 {#each auto.imagenes as img}
                     <img 
                         src={img} 
                         alt="thumb" 
-                        class:active={imagenGrande === img}
+                        class="thumb {imagenGrande === img ? 'active' : ''}"
                         on:click={() => cambiarImagen(img)} 
                     >
                 {/each}
             </div>
         {/if}
 
-        <div class="price-box">
-          <h3>Precio de Venta</h3>
-          <p class="precio-grande">
-              {formatearPrecio()} <span class="moneda-grande">{obtenerMoneda()}</span>
-              
-              {#if auto.ubicacion.includes('USA')}
-                  <small class="ref">(Referencial Subasta)</small>
-              {/if}
-          </p>
-          
-          <button class="btn-whatsapp" on:click={contactar}>
-             📲 Me interesa este vehículo
-          </button>
-
-          {#if auto.asesor_id && auto.asesor_id.nombre}
-            <p class="asesor-info">
-              <small>Atendido por: <strong>{auto.asesor_id.nombre}</strong></small>
-            </p>
-          {/if}
+        <div class="description-card">
+            <h3>📝 Detalles del Vehículo</h3>
+            <p>{auto.descripcion || "El vendedor no ha añadido una descripción detallada para este vehículo, pero puedes consultarnos directamente."}</p>
         </div>
-      </div>
+      </section>
 
-      <div class="info-section">
-        <h1>{auto.marca} {auto.modelo} <span class="anio-titulo">{auto.año}</span></h1>
-        <p class="subtitulo-vin">VIN / Chasis: {auto.vin}</p>
+      <aside class="info-section">
+        
+        <div class="buy-card">
+            <div class="header-info">
+                <small class="vin">VIN: {auto.vin}</small>
+                <h1>{auto.marca} {auto.modelo} <span class="year">{auto.año}</span></h1>
+            </div>
 
-        <div class="specs-grid">
-          <div class="spec-item">
-              <span class="label">Kilometraje</span>
-              <span class="value">{auto.kilometraje ? auto.kilometraje.toLocaleString() + ' km' : 'No esp.'}</span>
-          </div>
-          <div class="spec-item">
-              <span class="label">Transmisión</span>
-              <span class="value">{auto.transmision}</span>
-          </div>
-          <div class="spec-item">
-              <span class="label">Combustible</span>
-              <span class="value">{auto.tipo_combustible}</span>
-          </div>
-          <div class="spec-item">
-              <span class="label">Color Exterior</span>
-              <span class="value">{auto.color}</span>
-          </div>
-          
-          <div class="spec-item">
-              <span class="label">Situación Legal</span>
-              <span class="value badge-legal {auto.situacion_legal?.includes('Despachado') ? 'ok' : 'warn'}">
-                {auto.situacion_legal || 'Sin Datos'}
-              </span>
-          </div>
-          
-          {#if auto.placa}
-          <div class="spec-item">
-              <span class="label">Placa</span>
-              <span class="value highlight">{auto.placa}</span>
-          </div>
-          {/if}
-          
-          <div class="spec-item">
-              <span class="label">Condición</span>
-              <span class="value">{auto.estado_vehiculo}</span>
-          </div>
+            <div class="price-tag">
+                <span class="currency">{obtenerMoneda()}</span>
+                <span class="amount">{formatearPrecio()}</span>
+                {#if auto.ubicacion.includes('USA')}
+                    <div class="subasta-tag">Precio Referencial Subasta</div>
+                {/if}
+            </div>
+
+            <div class="legal-alert {auto.situacion_legal?.includes('Despachado') ? 'green' : 'yellow'}">
+                Documents: <strong>{auto.situacion_legal || 'No especificado'}</strong>
+                {#if auto.placa} <br> Placa: <strong>{auto.placa}</strong> {/if}
+            </div>
+
+            <button class="btn-cta" on:click={contactar}>
+                <span class="icon">📲</span> Contactar Asesor
+            </button>
+            
+            {#if auto.asesor_id}
+                <div class="asesor-mini">
+                    <div class="avatar">{auto.asesor_id.nombre[0]}</div>
+                    <div class="datos">
+                        <span>Atendido por:</span>
+                        <strong>{auto.asesor_id.nombre}</strong>
+                    </div>
+                </div>
+            {/if}
         </div>
 
-        {#if auto.descripcion}
-          <div class="descripcion-box">
-              <h4>Descripción Adicional</h4>
-              <p>{auto.descripcion}</p>
-          </div>
-        {/if}
+        <div class="specs-card">
+            <h3>⚙️ Ficha Técnica</h3>
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <span class="icon">🛣️</span>
+                    <div>
+                        <small>Kilometraje</small>
+                        <strong>{auto.kilometraje ? auto.kilometraje.toLocaleString() : '--'} km</strong>
+                    </div>
+                </div>
+                <div class="spec-item">
+                    <span class="icon">🕹️</span>
+                    <div>
+                        <small>Transmisión</small>
+                        <strong>{auto.transmision}</strong>
+                    </div>
+                </div>
+                <div class="spec-item">
+                    <span class="icon">⛽</span>
+                    <div>
+                        <small>Combustible</small>
+                        <strong>{auto.tipo_combustible}</strong>
+                    </div>
+                </div>
+                <div class="spec-item">
+                    <span class="icon">🎨</span>
+                    <div>
+                        <small>Color</small>
+                        <strong>{auto.color}</strong>
+                    </div>
+                </div>
+                <div class="spec-item">
+                    <span class="icon">⭐</span>
+                    <div>
+                        <small>Condición</small>
+                        <strong>{auto.estado_vehiculo}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-      </div>
+      </aside>
+
     </div>
-  </div>
+  </main>
 
-  <footer class="public-footer">
-    <p>© 2026 BETHEL MOTORS | Cochabamba, Bolivia</p>
+  <footer class="footer">
+    <p>© 2026 AEREBETEL MOTORS | Cochabamba - Bolivia</p>
   </footer>
 
 </div>
 
 <style>
-  /* ESTILOS ESTRUCTURALES */
-  .page-wrapper { background: #f9f9f9; min-height: 100vh; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; }
-  
-  /* HEADER */
-  .public-header { 
-    background: #003366; color: white; padding: 15px 30px; 
-    display: flex; justify-content: space-between; align-items: center; 
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  /* --- VARIABLES Y RESET --- */
+  :root {
+    --primary: #003366;
+    --primary-dark: #002244;
+    --accent: #e63946;
+    --bg: #f8f9fa;
+    --white: #ffffff;
+    --text: #333;
+    --gray: #6c757d;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
   }
-  .brand h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
-  .brand p { margin: 0; font-size: 0.8rem; opacity: 0.8; }
+
+  .page-wrapper { background-color: var(--bg); min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--text); }
+
+  /* --- NAVBAR --- */
+  .navbar { background: var(--white); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { font-size: 24px; }
+  .brand h1 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+  .brand small { display: block; font-size: 0.75rem; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; }
+  .btn-ghost { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem;}
+  .btn-ghost:hover { background: var(--primary); color: var(--white); }
+
+  /* --- CONTAINER & LAYOUT --- */
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
   
-  .btn-login { 
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); 
-    color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; transition: 0.3s; 
-  }
-  .btn-login:hover { background: white; color: #003366; }
+  .breadcrumb { margin-bottom: 20px; font-size: 0.9rem; color: var(--gray); }
+  .breadcrumb button { background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; font-weight: 600; }
+  .breadcrumb .separator { margin: 0 10px; }
 
-  /* CONTENIDO */
-  .detalle-container { max-width: 1100px; margin: 30px auto; padding: 0 20px; flex: 1; width: 100%; box-sizing: border-box; }
+  .grid-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 30px; align-items: start; }
+
+  /* --- GALERÍA --- */
+  .main-image-frame { width: 100%; aspect-ratio: 16/10; background: #eee; border-radius: 12px; overflow: hidden; position: relative; box-shadow: var(--shadow); }
+  .main-img { width: 100%; height: 100%; object-fit: cover; }
+  .placeholder-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--gray); font-size: 1.2rem; }
   
-  .top-bar { margin-bottom: 20px; }
-  .btn-volver { background: none; border: none; color: #003366; font-weight: bold; cursor: pointer; font-size: 1rem; padding: 0; display: flex; align-items: center; gap: 5px; }
-  .btn-volver:hover { text-decoration: underline; }
+  .badges-overlay { position: absolute; top: 15px; left: 15px; display: flex; gap: 10px; }
+  .badge-status { padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); backdrop-filter: blur(4px); }
+  .badge-status.bo { background: rgba(40, 167, 69, 0.9); }
+  .badge-status.cl { background: rgba(255, 153, 0, 0.9); }
+  .badge-status.usa { background: rgba(0, 51, 102, 0.9); }
 
-  .ficha-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; }
+  .thumbnails-scroll { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; }
+  .thumb { width: 90px; height: 65px; object-fit: cover; border-radius: 8px; cursor: pointer; opacity: 0.6; transition: 0.3s; border: 2px solid transparent; }
+  .thumb:hover, .thumb.active { opacity: 1; border-color: var(--primary); transform: translateY(-2px); }
 
-  /* IMAGEN */
-  .img-container { width: 100%; height: 400px; background: #eee; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-  .img-container img { width: 100%; height: 100%; object-fit: cover; }
-  .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: #777; font-weight: bold; }
+  /* --- TARJETAS --- */
+  .buy-card, .specs-card, .description-card { background: var(--white); padding: 25px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid #eee; }
+  .description-card { margin-top: 30px; }
 
-  .etiqueta-estado { position: absolute; top: 20px; left: 20px; padding: 8px 15px; color: white; font-weight: bold; border-radius: 5px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem;}
-  .etiqueta-estado.bo { background: #28a745; }
-  .etiqueta-estado.usa { background: #003366; }
-  .etiqueta-estado.cl { background: #ff9900; }
+  /* --- BUY CARD (PRECIO Y CTA) --- */
+  .vin { font-family: monospace; color: var(--gray); font-size: 0.85rem; letter-spacing: 1px; }
+  .header-info h1 { margin: 5px 0 20px 0; font-size: 2rem; line-height: 1.1; color: var(--text); }
+  .year { font-weight: 300; color: var(--gray); }
 
-  /* GALERÍA THUMBNAILS */
-  .thumbnails { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
-  .thumbnails img { width: 80px; height: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; opacity: 0.6; transition: 0.2s; border: 2px solid transparent; }
-  .thumbnails img:hover, .thumbnails img.active { opacity: 1; border-color: #003366; transform: translateY(-2px); }
+  .price-tag { margin-bottom: 25px; }
+  .currency { font-size: 1.2rem; font-weight: 500; color: var(--gray); vertical-align: top; }
+  .amount { font-size: 2.8rem; font-weight: 800; color: var(--primary); line-height: 1; }
+  .subasta-tag { display: inline-block; font-size: 0.8rem; background: #eef2f7; color: var(--primary); padding: 4px 8px; border-radius: 4px; font-weight: 600; margin-left: 10px; vertical-align: middle; }
 
-  /* PRECIO */
-  .price-box { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; text-align: center; }
-  .price-box h3 { margin: 0; color: #555; font-size: 0.9rem; text-transform: uppercase; }
-  .precio-grande { color: #003366; font-size: 2.5rem; font-weight: bold; margin: 10px 0 20px 0; display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap;}
-  .moneda-grande { font-size: 1.2rem; color: #555; font-weight: normal; }
-  .ref { display: block; width: 100%; font-size: 1rem; color: #777; font-weight: normal; margin-top: 5px; }
+  .legal-alert { padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 25px; }
+  .legal-alert.green { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+  .legal-alert.yellow { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
 
-  .btn-whatsapp { background: #003366; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-  .btn-whatsapp:hover { background: #002244; }
+  .btn-cta { width: 100%; background: #25D366; color: white; border: none; padding: 16px; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, background 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-cta:hover { background: #128C7E; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3); }
+
+  .asesor-mini { display: flex; align-items: center; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+  .avatar { width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+  .asesor-mini .datos { display: flex; flex-direction: column; font-size: 0.9rem; }
+  .asesor-mini span { color: var(--gray); font-size: 0.8rem; }
+
+  /* --- SPECS GRID --- */
+  .specs-card { margin-top: 20px; }
+  .specs-card h3, .description-card h3 { margin-top: 0; font-size: 1.1rem; color: var(--primary); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; }
   
-  .asesor-info { margin-top: 10px; color: #666; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 10px; }
+  .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .spec-item { display: flex; align-items: center; gap: 12px; }
+  .spec-item .icon { font-size: 1.5rem; background: #f0f4f8; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+  .spec-item div { display: flex; flex-direction: column; }
+  .spec-item small { color: var(--gray); font-size: 0.75rem; text-transform: uppercase; }
+  .spec-item strong { color: var(--text); font-size: 0.95rem; }
 
-  /* INFO TEXTO */
-  .info-section h1 { margin: 0; color: #333; font-size: 2.2rem; line-height: 1.2; }
-  .anio-titulo { color: #777; font-weight: normal; }
-  .subtitulo-vin { color: #888; margin-top: 10px; font-family: monospace; font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+  .description-card p { line-height: 1.6; color: #555; }
 
-  .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-  .spec-item { display: flex; flex-direction: column; }
-  .spec-item .label { font-size: 0.85rem; color: #777; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
-  .spec-item .value { font-size: 1.1rem; color: #333; font-weight: 500; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
+  .footer { text-align: center; padding: 40px 20px; color: var(--gray); font-size: 0.9rem; margin-top: 40px; border-top: 1px solid #eee; }
 
-  .badge-legal { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.95rem; width: fit-content; }
-  .badge-legal.ok { background: #d4edda; color: #155724; }
-  .badge-legal.warn { background: #fff3cd; color: #856404; }
-  .highlight { font-weight: bold; color: #003366; }
-
-  .descripcion-box { background: #eef2f6; padding: 20px; border-radius: 8px; border-left: 4px solid #003366; }
-  .descripcion-box h4 { margin-top: 0; color: #003366; margin-bottom: 10px; }
-  .descripcion-box p { margin: 0; color: #555; line-height: 1.6; }
-
-  /* FOOTER */
-  .public-footer { text-align: center; padding: 30px; color: #aaa; font-size: 0.9rem; margin-top: 50px; border-top: 1px solid #eee; background: white; }
-
-  @media (max-width: 800px) {
-    .ficha-layout { grid-template-columns: 1fr; }
-    .img-container { height: 250px; }
-    .public-header { flex-direction: column; text-align: center; gap: 10px; }
+  @media (max-width: 850px) {
+    .grid-layout { grid-template-columns: 1fr; }
+    .main-image-frame { aspect-ratio: 4/3; }
+    .header-info h1 { font-size: 1.6rem; }
   }
 </style>
