@@ -7,7 +7,7 @@ import multer from 'multer';
 // 1. CONFIGURACIÓN DE CLOUDINARY (¡PON TUS DATOS REALES AQUÍ!)
 cloudinary.config({ 
   cloud_name: 'dwdpcxryz', 
-  api_key: '2798382284515133', 
+  api_key: '279838228451513', 
   api_secret: 'ecl15izYxcMQHxAY9ceQgY4zARs' 
 });
 
