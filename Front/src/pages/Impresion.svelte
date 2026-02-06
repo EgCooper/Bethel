@@ -72,7 +72,9 @@
     dispatch('volver'); 
   }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 {#if cargando}
   <div class="loading">
     <div class="spinner"></div>

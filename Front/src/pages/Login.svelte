@@ -36,7 +36,9 @@
     dispatch('irCatalogo'); 
   }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <div class="login-container">
   <div class="login-card">
     <h1 class="titulo">BETHEL SYSTEM</h1>

@@ -130,7 +130,9 @@
     } catch (error) { Swal.fire('Error', 'No se pudo guardar', 'error'); }
   }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <div class="cotizador-wrapper">
   <div class="header-section">
     <h2>{idEdicion ? 'Editar Cotización' : 'Nueva Cotización'}</h2>

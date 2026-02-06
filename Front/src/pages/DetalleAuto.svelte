@@ -75,7 +75,9 @@
     window.open(`https://wa.me/${telefonoDestino}?text=${mensaje}`, '_blank');
   }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <div class="page-wrapper">
   
   <header class="hero-header">

@@ -99,7 +99,9 @@
   function editarCotizacion(id) { dispatch('editar', { id }); }
   function limpiarFiltros() { busquedaTexto = ""; busquedaFecha = ""; }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <div class="historial-container">
   <div class="header">
     <h2>📂 Historial de Cotizaciones</h2>

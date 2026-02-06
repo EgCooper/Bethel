@@ -79,7 +79,9 @@
     return numero.toLocaleString('en-US');
   }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <div class="catalogo-wrapper">
   
   <header class="hero">
@@ -109,13 +111,13 @@
         Todo el Stock
       </button>
       <button class="{filtroActual === 'bolivia' ? 'activo' : ''}" on:click={() => cambiarFiltro('bolivia')}>
-        🇧🇴 En Bolivia
+        🇧🇴 Bolivia
       </button>
       <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>
-        🇨🇱 En Tránsito
+        🇨🇱 Chile
       </button>
       <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>
-        🇺🇸 Subasta USA
+        🇺🇸 USA
       </button>
     </div>
   </nav>

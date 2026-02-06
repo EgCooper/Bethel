@@ -141,7 +141,9 @@
     }
   }
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <div class="users-container">
   <h2>👥 Gestión de Equipo</h2>
 

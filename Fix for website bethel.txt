@@ -3,9 +3,6 @@ Fix for website bethel
 #VISTA CLIENTE HOME
 
 -Agregar espacio en los botones del home de vista clientes
--Agregar boton que seleccion solo los vehiculos que estan en chile
--Implementar logo
--Cambiar nombre de la pagina de pestana
 -Mejorar el footer
 
 #LOGIN
@@ -33,8 +30,7 @@ Fix for website bethel
 - 
 # INVENTARIO
 
-- Implementar funcion para subir imagen
 - Incorporar boton para ver vehiculo
-- Meter mas de 1 foto
+
 - 
 
