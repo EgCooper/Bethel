@@ -44,7 +44,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST: CREAR VEHÍCULO (Con Imágenes y corrección de 'año')
-router.post('/', verificarToken, upload.array('fotos', 5), async (req, res) => {
+router.post('/', verificarToken, upload.array('fotos', 10), async (req, res) => {
   try {
     // 1. Subir imágenes a Cloudinary (si las hay)
     let urlsImagenes = [];
@@ -53,7 +53,7 @@ router.post('/', verificarToken, upload.array('fotos', 5), async (req, res) => {
       const promesasDeSubida = req.files.map(file => {
         return new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "aerebetel_stock" }, // Nombre de la carpeta en la nube
+            { folder: "aerebetel_stock" },
             (error, result) => {
               if (error) reject(error);
               else resolve(result.secure_url);

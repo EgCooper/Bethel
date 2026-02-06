@@ -12,8 +12,11 @@
   // Variables para manejo de archivos
   let archivosSeleccionados = [];
   let previsualizaciones = [];
+  
+  // REFERENCIA AL INPUT (SOLUCIÓN AL ERROR DE .value)
+  let inputFotos;
 
-  // Objeto formulario actualizado con los nuevos campos
+  // Objeto formulario actualizado
   let nuevoAuto = {
     marca: "",
     modelo: "",
@@ -49,9 +52,27 @@
     }
   }
 
-  // --- MANEJO DE ARCHIVOS (FOTOS) ---
+  // --- MANEJO DE ARCHIVOS (FOTOS) CON VALIDACIÓN ---
   function alSeleccionarArchivos(event) {
     const files = event.target.files;
+    
+    // 🛡️ VALIDACIÓN: MÁXIMO 10 FOTOS
+    if (files.length > 10) {
+        Swal.fire({
+            title: "¡Demasiadas fotos!",
+            text: "El límite máximo es de 10 fotos por vehículo. Por favor selecciona menos.",
+            icon: "warning",
+            confirmButtonColor: "#003366"
+        });
+        
+        // Limpiamos el input usando la referencia segura
+        if (inputFotos) inputFotos.value = ""; 
+        
+        archivosSeleccionados = [];
+        previsualizaciones = [];
+        return;
+    }
+
     if (files) {
       archivosSeleccionados = Array.from(files);
       // Crear URLs temporales para mostrar qué estás subiendo
@@ -71,10 +92,13 @@
     }; 
     idEdicion = auto._id; 
     
-    // Limpiamos previsualizaciones de archivos nuevos (no mostramos las fotos viejas en el input)
+    // Limpiamos previsualizaciones de archivos nuevos
     archivosSeleccionados = [];
     previsualizaciones = [];
     
+    // Limpiamos el input visualmente si quedó algo cargado
+    if (inputFotos) inputFotos.value = "";
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -93,6 +117,9 @@
     idEdicion = null;
     archivosSeleccionados = [];
     previsualizaciones = [];
+    
+    // ✅ SOLUCIÓN SEGURA: Usamos la variable enlazada
+    if (inputFotos) inputFotos.value = "";
   }
 
   async function guardarAuto() {
@@ -108,7 +135,6 @@
     try {
       if (idEdicion) {
         // --- MODO ACTUALIZAR (PUT) - Solo texto ---
-        // Nota: No enviamos fotos nuevas al editar en esta versión para simplificar
         await axios.put(`/api/vehiculos/${idEdicion}`, nuevoAuto);
         Swal.fire({
           title: "Actualizado", text: "Datos modificados correctamente.",
@@ -117,28 +143,24 @@
       } else {
         // --- MODO CREAR (POST) - Con Fotos (FormData) ---
         
-        // 1. Usamos FormData
         const formData = new FormData();
         
-        // 2. Agregamos los campos del nuevoAuto
         Object.keys(nuevoAuto).forEach(key => {
             if (key === 'año') {
-                // Enviamos 'anio' en lugar de 'año' para evitar errores de codificación
                 formData.append('anio', nuevoAuto[key]);
             } else {
                 formData.append(key, nuevoAuto[key]);
             }
         });
 
-        // 3. Agregamos las fotos
+        // Agregamos las fotos
         archivosSeleccionados.forEach(archivo => {
             formData.append('fotos', archivo);
         });
 
-        // Mostrar alerta de carga porque subir fotos tarda un poco
         Swal.fire({
             title: 'Subiendo...',
-            text: 'Guardando información e imágenes',
+            text: 'Guardando información e imágenes (esto puede tardar unos segundos)',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
@@ -157,8 +179,9 @@
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.error || "Error al guardar";
+      const detalle = error.response?.data?.detalle || "";
       Swal.fire({
-          title: "Error", text: msg, icon: "error", confirmButtonColor: "#003366"
+          title: "Error", text: `${msg} ${detalle}`, icon: "error", confirmButtonColor: "#003366"
       });
     }
   }
@@ -300,10 +323,22 @@
           </select>
         </div>
 
+        <div class="group full-width">
+            <label>Descripción</label>
+            <textarea bind:value={nuevoAuto.descripcion} rows="3"></textarea>
+        </div>
+
         {#if !idEdicion}
-            <div class="group">
-                <label>Fotografías (Seleccionar hasta 5)</label>
-                <input type="file" multiple accept="image/*" on:change={alSeleccionarArchivos} class="input-file">
+            <div class="group full-width">
+                <label>Fotografías (Máx 12)</label>
+                <input 
+                    type="file" 
+                    bind:this={inputFotos}
+                    multiple 
+                    accept="image/*" 
+                    on:change={alSeleccionarArchivos} 
+                    class="input-file"
+                >
                 
                 {#if previsualizaciones.length > 0}
                     <div class="preview-container">
@@ -418,7 +453,8 @@
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   
   label { display: block; font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 5px; }
-  input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+  input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+  .full-width { grid-column: 1 / -1; }
   
   /* INPUT DOBLE PARA PRECIO */
   .precio-input-group { display: flex; gap: 5px; }
