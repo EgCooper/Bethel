@@ -7,7 +7,7 @@
   let vehiculos = [];
   let vehiculosFiltrados = [];
   let cargando = true;
-  let filtroActual = 'todos'; // 'todos', 'bolivia', 'usa', 'chile'
+  let filtroActual = 'todos'; 
   let busqueda = "";
 
   onMount(cargarCatalogo);
@@ -32,7 +32,6 @@
   function filtrarVehiculos() {
     let resultado = vehiculos;
 
-    // 1. Filtro por Ubicación
     if (filtroActual === 'bolivia') {
       resultado = resultado.filter(v => v.ubicacion.includes('Bolivia'));
     } else if (filtroActual === 'usa') {
@@ -41,7 +40,6 @@
       resultado = resultado.filter(v => v.ubicacion.includes('Iquique') || v.ubicacion.includes('Chile'));
     }
 
-    // 2. Filtro por Buscador
     if (busqueda.trim() !== "") {
       const texto = busqueda.toLowerCase();
       resultado = resultado.filter(v => 
@@ -51,7 +49,6 @@
         v.vin.toLowerCase().includes(texto)
       );
     }
-
     vehiculosFiltrados = resultado;
   }
 
@@ -63,16 +60,36 @@
     dispatch('irLogin');
   }
 
-  // Helper para obtener imagen segura
+  // --- FUNCIONES SEGURAS PARA EVITAR CRASHEOS ---
+
+  // 1. Obtener imagen sin errores
   function obtenerImagen(auto) {
     if (auto.imagenes && auto.imagenes.length > 0) return auto.imagenes[0];
     if (auto.imagen_url) return auto.imagen_url;
     return null;
   }
 
-  // Helper para obtener precio seguro (Evita el crash)
-  function obtenerPrecio(auto) {
-    return auto.precio || auto.precio_usd || 0;
+  // 2. Obtener Moneda sin errores
+  function obtenerMoneda(auto) {
+    return auto.moneda || 'USD';
+  }
+
+  // 3. FORMATEAR PRECIO (¡AQUÍ ESTABA EL ERROR!) 🛡️
+  function formatearPrecio(auto) {
+    // Buscamos el precio en el campo nuevo O en el viejo
+    let valor = auto.precio || auto.precio_usd;
+
+    // Si no existe, devolvemos 0
+    if (!valor) return "0";
+
+    // Aseguramos que sea un número (por si viene como texto)
+    let numero = Number(valor);
+
+    // Si no es un número válido, devolvemos 0
+    if (isNaN(numero)) return "0";
+
+    // Si todo está bien, le ponemos las comas
+    return numero.toLocaleString('en-US');
   }
 </script>
 
@@ -80,7 +97,7 @@
   
   <header class="hero">
     <div class="hero-content">
-      <h1>AEREBETEL MOTORS</h1>
+      <h1>BETHEL MOTORS</h1>
       <p>Tu mejor opción en importación de vehículos</p>
       <div class="search-bar">
         <input 
@@ -96,18 +113,10 @@
   </header>
 
   <nav class="filtros">
-    <button class="{filtroActual === 'todos' ? 'activo' : ''}" on:click={() => cambiarFiltro('todos')}>
-      Todo el Stock
-    </button>
-    <button class="{filtroActual === 'bolivia' ? 'activo' : ''}" on:click={() => cambiarFiltro('bolivia')}>
-      🇧🇴 En Bolivia
-    </button>
-    <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>
-      🇨🇱 En Tránsito (Iquique)
-    </button>
-    <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>
-      🇺🇸 Subasta USA
-    </button>
+    <button class="{filtroActual === 'todos' ? 'activo' : ''}" on:click={() => cambiarFiltro('todos')}>Todo el Stock</button>
+    <button class="{filtroActual === 'bolivia' ? 'activo' : ''}" on:click={() => cambiarFiltro('bolivia')}>🇧🇴 En Bolivia</button>
+    <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>🇨🇱 En Tránsito (Iquique)</button>
+    <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>🇺🇸 Subasta USA</button>
   </nav>
 
   <div class="grid-autos">
@@ -115,7 +124,7 @@
       <p class="mensaje">Cargando inventario...</p>
     {:else if vehiculosFiltrados.length === 0}
       <div class="mensaje-vacio">
-        <p>No se encontraron vehículos con estos criterios.</p>
+        <p>No se encontraron vehículos.</p>
       </div>
     {:else}
       {#each vehiculosFiltrados as auto}
@@ -150,8 +159,8 @@
             </div>
             
             <p class="precio">
-              {obtenerPrecio(auto).toLocaleString('en-US')} 
-              <span class="moneda">{auto.moneda || 'USD'}</span>
+              {formatearPrecio(auto)} 
+              <span class="moneda">{obtenerMoneda(auto)}</span>
             </p>
             
             <button class="btn-ver">Ver Detalles</button>
@@ -162,79 +171,44 @@
   </div>
 
   <footer class="footer">
-    <p>© 2026 AEREBETEL MOTORS | Cochabamba - Bolivia</p>
+    <p>© 2026 BETHEL MOTORS | Cochabamba - Bolivia</p>
   </footer>
 
 </div>
 
 <style>
   .catalogo-wrapper { background: #f4f4f9; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-
-  /* HERO HEADER */
-  .hero { 
-    background: linear-gradient(135deg, #003366 0%, #001a33 100%); 
-    color: white; padding: 40px 20px; text-align: center; position: relative;
-  }
+  .hero { background: linear-gradient(135deg, #003366 0%, #001a33 100%); color: white; padding: 40px 20px; text-align: center; position: relative; }
   .hero h1 { margin: 0; font-size: 2.5rem; letter-spacing: 2px; }
   .hero p { margin: 10px 0 20px 0; color: #ccc; }
-  
   .btn-acceso { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; }
   .btn-acceso:hover { background: white; color: #003366; }
-
-  /* BUSCADOR */
   .search-bar { display: flex; max-width: 500px; margin: 0 auto; background: white; border-radius: 30px; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
   .search-bar input { flex: 1; border: none; padding: 10px 20px; border-radius: 30px; outline: none; font-size: 1rem; }
   .btn-search { background: #cc0000; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-  /* FILTROS NAV */
   .filtros { display: flex; justify-content: center; gap: 10px; margin: 20px 0; flex-wrap: wrap; padding: 0 10px; }
-  .filtros button { 
-    background: white; border: 1px solid #ddd; padding: 8px 16px; 
-    border-radius: 20px; cursor: pointer; font-weight: 500; color: #555; transition: 0.2s; 
-  }
+  .filtros button { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 500; color: #555; transition: 0.2s; }
   .filtros button.activo { background: #003366; color: white; border-color: #003366; }
-  .filtros button:hover:not(.activo) { background: #eee; }
-
-  /* GRID DE AUTOS */
-  .grid-autos { 
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
-    gap: 25px; max-width: 1200px; margin: 0 auto; padding: 20px; 
-  }
-  
+  .grid-autos { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; padding: 20px; }
   .card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.08); transition: transform 0.2s; cursor: pointer; }
   .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-
   .img-wrapper { height: 180px; background: #eee; position: relative; }
   .img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
   .no-img { height: 100%; display: flex; align-items: center; justify-content: center; color: #888; font-weight: bold; }
-
-  /* BADGES */
   .badge { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 4px; color: white; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-  .badge.bo { background: #28a745; }
-  .badge.usa { background: #003366; }
-  .badge.cl { background: #ff9900; }
-
+  .badge.bo { background: #28a745; } .badge.usa { background: #003366; } .badge.cl { background: #ff9900; }
   .card-info { padding: 15px; text-align: center; }
   .card-info h3 { margin: 0; font-size: 1.1rem; color: #333; }
   .anio { color: #888; margin: 5px 0; font-size: 0.9rem; }
-  
   .legal-tag { display: inline-block; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; font-weight: bold;}
   .legal-tag.ok { background: #d4edda; color: #155724; }
   .legal-tag.pend { background: #fff3cd; color: #856404; }
-
   .detalles { color: #666; font-size: 0.85rem; margin-bottom: 10px; }
-  
   .precio { font-size: 1.3rem; font-weight: bold; color: #003366; margin-bottom: 10px; }
   .moneda { font-size: 0.8rem; font-weight: normal; color: #555; }
-  
   .btn-ver { background: #003366; color: white; border: none; width: 100%; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   .btn-ver:hover { background: #002244; }
-
   .mensaje, .mensaje-vacio { text-align: center; width: 100%; padding: 50px; color: #777; grid-column: 1 / -1; }
   .footer { text-align: center; padding: 20px; color: #aaa; font-size: 0.85rem; margin-top: 20px; }
-
-  @media (max-width: 600px) {
-    .hero h1 { font-size: 1.8rem; }
-    .grid-autos { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } .grid-autos { grid-template-columns: 1fr; } }
 </style>
