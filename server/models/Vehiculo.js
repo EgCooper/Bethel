@@ -5,7 +5,15 @@ const vehiculoSchema = new mongoose.Schema({
   modelo: { type: String, required: true },
   año: { type: Number, required: true },
   vin: { type: String, required: true, unique: true },
-  precio_usd: { type: Number, required: true },
+  
+  precio: { type: Number, required: true },
+  moneda: { 
+      type: String, 
+      enum: ['USD', 'BOB'], 
+      default: 'USD',
+      required: true
+  },
+
   kilometraje: { type: Number },
   color: { type: String },
   tipo_combustible: { type: String },
@@ -15,18 +23,25 @@ const vehiculoSchema = new mongoose.Schema({
   ubicacion: { 
       type: String, 
       required: true, 
-      enum: ['USA (Subasta)', 'Bolivia (Disponible)', 'Chile (Transito)'] 
+      enum: ['USA (Subasta)', 'Bolivia (Disponible)', 'Iquique (Transito)'] 
   },
-  
-  imagen_url: { type: String },
+
+
+  situacion_legal: {
+      type: String,
+      enum: ['No Despachado (Sin Papeles)', 'En Trámite (Aduana)', 'Despachado (Con Papeles)'],
+      default: 'No Despachado (Sin Papeles)'
+  },
+  placa: { 
+      type: String, 
+      default: 'Sin Placa'
+  },
+
   descripcion: { type: String },
-  
-  // El campo del asesor
-  asesor_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Usuario',
-    required: false 
-  },
+  asesor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
+
+  // 📸 IMÁGENES
+  imagenes: [{ type: String }], 
   
   fecha_creacion: { type: Date, default: Date.now }
 });
