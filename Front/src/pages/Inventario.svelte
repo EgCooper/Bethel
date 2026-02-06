@@ -120,9 +120,14 @@
         // 1. Usamos FormData
         const formData = new FormData();
         
-        // 2. Agregamos campos de texto
+        // 2. Agregamos los campos del nuevoAuto
         Object.keys(nuevoAuto).forEach(key => {
-            formData.append(key, nuevoAuto[key]);
+            if (key === 'año') {
+                // Enviamos 'anio' en lugar de 'año' para evitar errores de codificación
+                formData.append('anio', nuevoAuto[key]);
+            } else {
+                formData.append(key, nuevoAuto[key]);
+            }
         });
 
         // 3. Agregamos las fotos
