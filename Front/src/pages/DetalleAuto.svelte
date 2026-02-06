@@ -2,9 +2,32 @@
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
 
-  export let auto; 
-  console.log("DATOS DEL AUTO:", auto);
-  console.log("ASESOR ENCONTRADO:", auto.asesor_id);
+  export let auto; // Recibimos el auto seleccionado
+
+  // --- 1. LÓGICA DE GALERÍA DE IMÁGENES ---
+  // Detectamos si tiene galería nueva o foto vieja
+  let tieneGaleria = auto.imagenes && auto.imagenes.length > 0;
+  // La imagen grande empieza siendo la primera de la lista o la antigua
+  let imagenGrande = tieneGaleria ? auto.imagenes[0] : (auto.imagen_url || '');
+
+  function cambiarImagen(img) {
+    imagenGrande = img;
+  }
+
+  // --- 2. LÓGICA DE PRECIO SEGURO (ANTI-CRASH) ---
+  function formatearPrecio() {
+    let valor = auto.precio || auto.precio_usd;
+    if (!valor) return "0";
+    let numero = Number(valor);
+    if (isNaN(numero)) return "0";
+    return numero.toLocaleString('en-US');
+  }
+
+  function obtenerMoneda() {
+    return auto.moneda || 'USD';
+  }
+
+  // --- 3. NAVEGACIÓN ---
   function volver() {
     dispatch('volver');
   }
@@ -13,33 +36,31 @@
     dispatch('irLogin');
   }
 
+  // --- 4. WHATSAPP INTELIGENTE ---
   function contactar() {
-    // 1. Definimos un número por defecto (Gerencia/Central)
-    // Úsalo si el auto es antiguo y no tiene dueño asignado
-    const numeroCentral = "59162512418"; 
-
-    // 2. Variables iniciales
-    let telefonoDestino = numeroCentral;
-    let nombreDestino = "Bethel";
+    // A. Número por defecto (Central de Bethel)
+    let telefonoDestino = "59162512418"; // Pon tu número central aquí
+    let nombreDestino = "Bethel Motors";
     
-    // 3. Verificamos si hay un asesor asignado con teléfono
+    // B. Si el auto tiene un asesor asignado, usamos sus datos
     if (auto.asesor_id && auto.asesor_id.telefono) {
         telefonoDestino = auto.asesor_id.telefono;
         nombreDestino = auto.asesor_id.nombre;
     }
 
-    // 4. Limpiamos el número (quitamos espacios, guiones, símbolos)
-    telefonoDestino = telefonoDestino.replace(/\D/g, '');
-    
-    // 5. Si falta el código de país (Bolivia 591), lo agregamos
-    if (telefonoDestino.length === 8) {
-        telefonoDestino = '591' + telefonoDestino;
-    }
+    // Limpieza del número
+    telefonoDestino = telefonoDestino.replace(/\D/g, ''); // Solo números
+    if (telefonoDestino.length === 8) telefonoDestino = '591' + telefonoDestino;
 
-    // 6. Mensaje Personalizado
-    const mensaje = `Hola *${nombreDestino}*, vi el *${auto.marca} ${auto.modelo} ${auto.año}* (Ref: ${auto.vin.slice(-6)}) en la web y me interesa. ¿Sigue disponible?`;
+    // Mensaje con salto de línea (%0A)
+    const mensaje = `Hola *${nombreDestino}*, me interesa el vehículo de la web:%0A%0A` +
+                    `🚘 *${auto.marca} ${auto.modelo} ${auto.año}*%0A` +
+                    `💰 Precio: ${formatearPrecio()} ${obtenerMoneda()}%0A` +
+                    `📍 Ubicación: ${auto.ubicacion}%0A` +
+                    `🆔 Ref: ${auto.vin ? auto.vin.slice(-6) : 'N/A'}%0A%0A` +
+                    `¿Sigue disponible?`;
     
-    const url = `https://wa.me/${telefonoDestino}?text=${encodeURIComponent(mensaje)}`;
+    const url = `https://wa.me/${telefonoDestino}?text=${mensaje}`; // No uses encodeURIComponent completo aquí si usas %0A manuales
     window.open(url, '_blank');
   }
 </script>
@@ -49,7 +70,7 @@
   <header class="public-header">
     <div class="brand">
       <h1>BETHEL MOTORS</h1>
-      <p>Importacion Directa & Stock Disponible</p>
+      <p>Importación Directa & Stock Disponible</p>
     </div>
     <button class="btn-login" on:click={irAlLogin}>
       🔒 Soy Asesor
@@ -60,35 +81,51 @@
     
     <div class="top-bar">
       <button class="btn-volver" on:click={volver}>
-         &larr; Volver al Catalogo
+         &larr; Volver al Catálogo
       </button>
     </div>
 
     <div class="ficha-layout">
       
       <div class="media-section">
+        
         <div class="img-container">
-          {#if auto.imagen_url}
-            <img src={auto.imagen_url} alt={auto.modelo}>
+          {#if imagenGrande}
+            <img src={imagenGrande} alt={auto.modelo}>
           {:else}
             <div class="no-img">Sin Imagen Disponible</div>
           {/if}
           
-          <span class="etiqueta-estado {auto.ubicacion.includes('Bolivia') ? 'bo' : 'usa'}">
+          <span class="etiqueta-estado {auto.ubicacion.includes('Bolivia') ? 'bo' : auto.ubicacion.includes('Iquique') ? 'cl' : 'usa'}">
             {auto.ubicacion}
           </span>
         </div>
 
+        {#if tieneGaleria && auto.imagenes.length > 1}
+            <div class="thumbnails">
+                {#each auto.imagenes as img}
+                    <img 
+                        src={img} 
+                        alt="thumb" 
+                        class:active={imagenGrande === img}
+                        on:click={() => cambiarImagen(img)} 
+                    >
+                {/each}
+            </div>
+        {/if}
+
         <div class="price-box">
           <h3>Precio de Venta</h3>
           <p class="precio-grande">
-              $ {auto.precio_usd.toLocaleString('en-US')}
+              {formatearPrecio()} <span class="moneda-grande">{obtenerMoneda()}</span>
+              
               {#if auto.ubicacion.includes('USA')}
                   <small class="ref">(Referencial Subasta)</small>
               {/if}
           </p>
+          
           <button class="btn-whatsapp" on:click={contactar}>
-             Me interesa este vehiculo
+             📲 Me interesa este vehículo
           </button>
 
           {#if auto.asesor_id && auto.asesor_id.nombre}
@@ -101,7 +138,7 @@
 
       <div class="info-section">
         <h1>{auto.marca} {auto.modelo} <span class="anio-titulo">{auto.año}</span></h1>
-        <p class="subtitulo-vin">SN: {auto.vin}</p>
+        <p class="subtitulo-vin">VIN / Chasis: {auto.vin}</p>
 
         <div class="specs-grid">
           <div class="spec-item">
@@ -109,7 +146,7 @@
               <span class="value">{auto.kilometraje ? auto.kilometraje.toLocaleString() + ' km' : 'No esp.'}</span>
           </div>
           <div class="spec-item">
-              <span class="label">Transmision</span>
+              <span class="label">Transmisión</span>
               <span class="value">{auto.transmision}</span>
           </div>
           <div class="spec-item">
@@ -120,19 +157,30 @@
               <span class="label">Color Exterior</span>
               <span class="value">{auto.color}</span>
           </div>
+          
           <div class="spec-item">
-              <span class="label">Condicion</span>
-              <span class="value">{auto.estado_vehiculo}</span>
+              <span class="label">Situación Legal</span>
+              <span class="value badge-legal {auto.situacion_legal?.includes('Despachado') ? 'ok' : 'warn'}">
+                {auto.situacion_legal || 'Sin Datos'}
+              </span>
           </div>
+          
+          {#if auto.placa}
           <div class="spec-item">
-              <span class="label">Ubicacion</span>
-              <span class="value">{auto.ubicacion}</span>
+              <span class="label">Placa</span>
+              <span class="value highlight">{auto.placa}</span>
+          </div>
+          {/if}
+          
+          <div class="spec-item">
+              <span class="label">Condición</span>
+              <span class="value">{auto.estado_vehiculo}</span>
           </div>
         </div>
 
         {#if auto.descripcion}
           <div class="descripcion-box">
-              <h4>Descripcion Adicional</h4>
+              <h4>Descripción Adicional</h4>
               <p>{auto.descripcion}</p>
           </div>
         {/if}
@@ -180,15 +228,22 @@
   .img-container img { width: 100%; height: 100%; object-fit: cover; }
   .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: #777; font-weight: bold; }
 
-  .etiqueta-estado { position: absolute; top: 20px; left: 20px; padding: 8px 15px; color: white; font-weight: bold; border-radius: 5px; text-transform: uppercase; letter-spacing: 1px; }
+  .etiqueta-estado { position: absolute; top: 20px; left: 20px; padding: 8px 15px; color: white; font-weight: bold; border-radius: 5px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem;}
   .etiqueta-estado.bo { background: #28a745; }
   .etiqueta-estado.usa { background: #003366; }
+  .etiqueta-estado.cl { background: #ff9900; }
+
+  /* GALERÍA THUMBNAILS */
+  .thumbnails { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
+  .thumbnails img { width: 80px; height: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; opacity: 0.6; transition: 0.2s; border: 2px solid transparent; }
+  .thumbnails img:hover, .thumbnails img.active { opacity: 1; border-color: #003366; transform: translateY(-2px); }
 
   /* PRECIO */
   .price-box { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; text-align: center; }
   .price-box h3 { margin: 0; color: #555; font-size: 0.9rem; text-transform: uppercase; }
-  .precio-grande { color: #003366; font-size: 2.5rem; font-weight: bold; margin: 10px 0 20px 0; }
-  .ref { display: block; font-size: 1rem; color: #777; font-weight: normal; margin-top: 5px; }
+  .precio-grande { color: #003366; font-size: 2.5rem; font-weight: bold; margin: 10px 0 20px 0; display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap;}
+  .moneda-grande { font-size: 1.2rem; color: #555; font-weight: normal; }
+  .ref { display: block; width: 100%; font-size: 1rem; color: #777; font-weight: normal; margin-top: 5px; }
 
   .btn-whatsapp { background: #003366; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
   .btn-whatsapp:hover { background: #002244; }
@@ -204,6 +259,11 @@
   .spec-item { display: flex; flex-direction: column; }
   .spec-item .label { font-size: 0.85rem; color: #777; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
   .spec-item .value { font-size: 1.1rem; color: #333; font-weight: 500; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
+
+  .badge-legal { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.95rem; width: fit-content; }
+  .badge-legal.ok { background: #d4edda; color: #155724; }
+  .badge-legal.warn { background: #fff3cd; color: #856404; }
+  .highlight { font-weight: bold; color: #003366; }
 
   .descripcion-box { background: #eef2f6; padding: 20px; border-radius: 8px; border-left: 4px solid #003366; }
   .descripcion-box h4 { margin-top: 0; color: #003366; margin-bottom: 10px; }
