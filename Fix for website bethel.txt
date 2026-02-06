@@ -35,5 +35,6 @@ Fix for website bethel
 
 - Implementar funcion para subir imagen
 - Incorporar boton para ver vehiculo
+- Meter mas de 1 foto
 - 
 
