@@ -41,7 +41,7 @@
       resultado = resultado.filter(v => v.ubicacion.includes('Iquique') || v.ubicacion.includes('Chile'));
     }
 
-    // 2. Filtro por Buscador (Marca, Modelo o Año)
+    // 2. Filtro por Buscador
     if (busqueda.trim() !== "") {
       const texto = busqueda.toLowerCase();
       resultado = resultado.filter(v => 
@@ -62,13 +62,25 @@
   function irLogin() {
     dispatch('irLogin');
   }
+
+  // Helper para obtener imagen segura
+  function obtenerImagen(auto) {
+    if (auto.imagenes && auto.imagenes.length > 0) return auto.imagenes[0];
+    if (auto.imagen_url) return auto.imagen_url;
+    return null;
+  }
+
+  // Helper para obtener precio seguro (Evita el crash)
+  function obtenerPrecio(auto) {
+    return auto.precio || auto.precio_usd || 0;
+  }
 </script>
 
 <div class="catalogo-wrapper">
   
   <header class="hero">
     <div class="hero-content">
-      <h1>BETHEL MOTORS</h1>
+      <h1>AEREBETEL MOTORS</h1>
       <p>Tu mejor opción en importación de vehículos</p>
       <div class="search-bar">
         <input 
@@ -91,7 +103,7 @@
       🇧🇴 En Bolivia
     </button>
     <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>
-      🇨🇱 En Chile
+      🇨🇱 En Tránsito (Iquique)
     </button>
     <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>
       🇺🇸 Subasta USA
@@ -108,9 +120,10 @@
     {:else}
       {#each vehiculosFiltrados as auto}
         <div class="card" on:click={() => verDetalle(auto)}>
+          
           <div class="img-wrapper">
-            {#if auto.imagen_url}
-              <img src={auto.imagen_url} alt={auto.modelo} loading="lazy">
+            {#if obtenerImagen(auto)}
+              <img src={obtenerImagen(auto)} alt={auto.modelo} loading="lazy">
             {:else}
               <div class="no-img">Sin Foto</div>
             {/if}
@@ -125,10 +138,22 @@
           <div class="card-info">
             <h3>{auto.marca} {auto.modelo}</h3>
             <p class="anio">{auto.año}</p>
+            
+            {#if auto.situacion_legal}
+              <div class="legal-tag {auto.situacion_legal.includes('Despachado') ? 'ok' : 'pend'}">
+                 {auto.situacion_legal.split('(')[0]}
+              </div>
+            {/if}
+
             <div class="detalles">
               <span>{auto.transmision}</span> • <span>{auto.tipo_combustible}</span>
             </div>
-            <p class="precio">$ {auto.precio_usd.toLocaleString('en-US')}</p>
+            
+            <p class="precio">
+              {obtenerPrecio(auto).toLocaleString('en-US')} 
+              <span class="moneda">{auto.moneda || 'USD'}</span>
+            </p>
+            
             <button class="btn-ver">Ver Detalles</button>
           </div>
         </div>
@@ -137,7 +162,7 @@
   </div>
 
   <footer class="footer">
-    <p>© 2026 BETHEL MOTORS | Cochabamba - Bolivia</p>
+    <p>© 2026 AEREBETEL MOTORS | Cochabamba - Bolivia</p>
   </footer>
 
 </div>
@@ -187,13 +212,20 @@
   .badge { position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 4px; color: white; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
   .badge.bo { background: #28a745; }
   .badge.usa { background: #003366; }
-  .badge.cl { background: #ff9900; } /* Naranja para Iquique */
+  .badge.cl { background: #ff9900; }
 
   .card-info { padding: 15px; text-align: center; }
   .card-info h3 { margin: 0; font-size: 1.1rem; color: #333; }
   .anio { color: #888; margin: 5px 0; font-size: 0.9rem; }
+  
+  .legal-tag { display: inline-block; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; font-weight: bold;}
+  .legal-tag.ok { background: #d4edda; color: #155724; }
+  .legal-tag.pend { background: #fff3cd; color: #856404; }
+
   .detalles { color: #666; font-size: 0.85rem; margin-bottom: 10px; }
+  
   .precio { font-size: 1.3rem; font-weight: bold; color: #003366; margin-bottom: 10px; }
+  .moneda { font-size: 0.8rem; font-weight: normal; color: #555; }
   
   .btn-ver { background: #003366; color: white; border: none; width: 100%; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   .btn-ver:hover { background: #002244; }
