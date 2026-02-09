@@ -2,7 +2,8 @@
   // @ts-nocheck
   import { onMount } from "svelte";
   import Swal from "sweetalert2";
-  
+  import axios from "axios";
+
   // Vistas Públicas
   import Login from "./pages/Login.svelte"; 
   import Catalogo from "./pages/Catalogo.svelte"; 
@@ -14,7 +15,7 @@
   import Impresion from "./pages/Impresion.svelte";
   import Historial from "./pages/Historial.svelte";
   import Inventario from "./pages/Inventario.svelte";
-  import Usuarios from "./pages/Usuarios.svelte"; // ✅ Importación correcta
+  import Usuarios from "./pages/Usuarios.svelte"; 
 
   // --- ESTADO ---
   let usuario = null; 
@@ -22,13 +23,48 @@
   let autoSeleccionado = null;
   let autoParaCotizar = null; 
 
-  // --- CARGA INICIAL ---
-  onMount(() => {
+  // --- CARGA INICIAL Y RUTAS ---
+  onMount(async () => {
+    // 1. Cargar Usuario
     const userGuardado = localStorage.getItem("usuario");
     if (userGuardado) {
       usuario = JSON.parse(userGuardado);
     }
+
+    // 2. Manejar Navegación (Botón Atrás/Adelante)
+    window.onpopstate = (event) => {
+        if (event.state && event.state.id) {
+             // Si el estado tiene ID, intentamos cargar ese auto
+             cargarAutoPorId(event.state.id);
+        } else {
+             // Si no hay estado, volvemos al inicio (cerrar modal)
+             autoSeleccionado = null;
+             mostrandoLogin = false;
+        }
+    };
+
+    // 3. Revisar URL Inicial (Ej: /detalles/123)
+    const ruta = window.location.pathname;
+    if (ruta.startsWith('/detalles/')) {
+        const idAuto = ruta.split('/')[2];
+        if (idAuto) {
+            await cargarAutoPorId(idAuto);
+        }
+    }
   });
+
+  async function cargarAutoPorId(id) {
+    try {
+        const res = await axios.get(`/api/vehiculos/${id}`);
+        if (res.data) {
+            autoSeleccionado = res.data;
+        }
+    } catch (error) {
+        console.error("No se pudo cargar el auto compartido:", error);
+        // Si falla, limpiamos la URL
+        window.history.replaceState(null, '', '/');
+    }
+  }
 
   // --- LÓGICA DE SESIÓN ---
   function alLoguearse() {
@@ -55,11 +91,12 @@
         autoSeleccionado = null;
         autoParaCotizar = null;
         paginaActual = 'inicio';
+        window.history.pushState(null, '', '/'); // Limpiar URL al salir
       }
     });
   }
 
-  // --- NAVEGACIÓN ---
+  // --- NAVEGACIÓN INTERNA (Panel Admin) ---
   let paginaActual = 'inicio'; 
   let cotizacionIdParaImprimir = null;
   let cotizacionIdParaEditar = null;
@@ -111,16 +148,24 @@
     paginaActual = 'cotizar'; 
   }
 
+  // ✅ ABRIR DETALLE Y CAMBIAR URL
   function abrirDetalleAuto(event) {
-    autoSeleccionado = event.detail; 
+    autoSeleccionado = event.detail;
+    // Cambiamos la URL a /detalles/ID sin recargar
+    window.history.pushState({id: autoSeleccionado._id}, '', `/detalles/${autoSeleccionado._id}`);
   }
   
+  // ✅ CERRAR DETALLE Y LIMPIAR URL
   function volverAlCatalogo() {
-    autoSeleccionado = null; 
+    autoSeleccionado = null;
+    // Volvemos a la raíz /
+    window.history.pushState(null, '', '/');
   }
 
 </script>
-
+<svelte:head>
+  <title>Bethel Motors</title>
+</svelte:head>
 <main>
   
   {#if !usuario}
