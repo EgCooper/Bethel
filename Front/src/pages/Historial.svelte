@@ -2,6 +2,7 @@
   import { onMount, createEventDispatcher } from "svelte";
   import axios from "axios";
   import Swal from "sweetalert2";
+  
   const dispatch = createEventDispatcher();
   
   let cotizaciones = []; 
@@ -25,7 +26,7 @@
       if (usuario) {
         esAdmin = (usuario.rol === 'admin');
 
-        // CORREGIDO: Ruta relativa (sin localhost)
+        // Petición al backend
         const res = await axios.get(`/api/cotizaciones?usuario_id=${usuario.id}&rol=${usuario.rol}`);
         
         cotizaciones = res.data;
@@ -35,7 +36,6 @@
     } catch (error) {
       console.error(error);
       cargando = false;
-      // No mostramos alerta intrusiva si falla por red, solo log
     }
   });
 
@@ -54,7 +54,6 @@
 
     if (result.isConfirmed) {
       try {
-        // CORREGIDO: Ruta relativa
         await axios.delete(`/api/cotizacion/${id}`);
         cotizaciones = cotizaciones.filter(c => c._id !== id);
         
@@ -68,9 +67,12 @@
   // --- CAMBIAR ESTADO ---
   async function cambiarEstado(id, nuevoEstado) {
     try {
-      // CORREGIDO: Ruta relativa
       await axios.patch(`/api/cotizacion/${id}/estado`, { estado: nuevoEstado });
-      console.log("Estado actualizado");
+      // Opcional: Mostrar un toast pequeño de éxito
+      const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000
+      });
+      Toast.fire({ icon: 'success', title: 'Estado actualizado' });
     } catch (error) {
       Swal.fire("Error", "No se pudo actualizar el estado", "error");
     }
@@ -95,17 +97,25 @@
     return coincideTexto && coincideFecha;
   });
 
+  // Funciones de navegación
   function verCotizacion(id) { dispatch('ver', { id }); }
   function editarCotizacion(id) { dispatch('editar', { id }); }
   function limpiarFiltros() { busquedaTexto = ""; busquedaFecha = ""; }
+  
+  // ✅ FUNCIÓN VOLVER
+  function volver() { dispatch('volver'); }
 </script>
+
 <svelte:head>
-  <title>Bethel Motors</title>
+  <title>Bethel Motors - Historial</title>
 </svelte:head>
+
 <div class="historial-container">
-  <div class="header">
-    <h2>📂 Historial de Cotizaciones</h2>
-  </div>
+  
+  <div class="header-flex">
+    <button class="btn-volver" on:click={volver}>← Volver</button>
+    <h2> Historial de Cotizaciones</h2>
+    <div style="width: 80px;"></div> </div>
 
   <div class="filtros-bar">
     <div class="input-group">
@@ -173,11 +183,11 @@
               <td class="monto">$ {item.totales.total_usd.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
               
               <td class="acciones">
-                <button class="btn-action btn-ver" title="Ver PDF" on:click={() => verCotizacion(item._id)}>👁️ Ver</button>
-                <button class="btn-action btn-edit" title="Editar" on:click={() => editarCotizacion(item._id)}>✏️ Editar</button>
+                <button class="btn-action btn-ver" title="Ver PDF" on:click={() => verCotizacion(item._id)}> Ver</button>
+                <button class="btn-action btn-edit" title="Editar" on:click={() => editarCotizacion(item._id)}> Editar</button>
                 
                 {#if esAdmin}
-                  <button class="btn-action btn-del" title="Eliminar" on:click={() => eliminarCotizacion(item._id)}>🗑️</button>
+                  <button class="btn-action btn-del" title="Eliminar" on:click={() => eliminarCotizacion(item._id)}>Eliminar</button>
                 {/if}
               </td>
             </tr>
@@ -189,9 +199,21 @@
 </div>
 
 <style>
-  .historial-container { max-width: 1100px; margin: 0 auto; }
-  .header { margin-bottom: 20px; border-bottom: 2px solid #003366; padding-bottom: 10px; }
-  h2 { margin: 0; color: #003366; }
+  .historial-container { max-width: 1100px; margin: 0 auto; padding-bottom: 50px; }
+  
+  /* HEADER FLEXIBLE */
+  .header-flex { 
+      display: flex; justify-content: space-between; align-items: center; 
+      margin-bottom: 20px; border-bottom: 2px solid #003366; padding-bottom: 10px; 
+  }
+  h2 { margin: 0; color: #003366; font-size: 1.5rem; }
+
+  /* BOTÓN VOLVER */
+  .btn-volver { 
+      background: white; border: 1px solid #003366; color: #003366; 
+      padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s;
+  }
+  .btn-volver:hover { background: #003366; color: white; }
 
   /* Filtros */
   .filtros-bar { display: flex; gap: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; align-items: flex-end; flex-wrap: wrap; }
@@ -232,7 +254,7 @@
   .btn-action {
     border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold;
     padding: 6px 10px; font-size: 0.8rem; transition: transform 0.1s;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
   }
   .btn-action:hover { transform: scale(1.05); opacity: 0.9; }
 
@@ -240,4 +262,9 @@
   .btn-edit { background: #ffcc00; color: #333; } /* Amarillo */
   .btn-del { background: #cc0000; } /* Rojo */
 
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+      .header-flex { flex-direction: column; gap: 10px; text-align: center; }
+      .header-flex div { display: none; } /* Ocultar espaciador en móvil */
+  }
 </style>

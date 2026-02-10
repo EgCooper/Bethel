@@ -1,303 +1,352 @@
 <script>
   import { onMount, createEventDispatcher } from "svelte";
   import axios from "axios";
-  import html2pdf from "html2pdf.js";
-  import Swal from 'sweetalert2'; 
-  const dispatch = createEventDispatcher();
+  import Swal from "sweetalert2";
 
-  export let id; 
-  
+  export let id = null; 
+  const dispatch = createEventDispatcher();
 
   let cotizacion = null;
   let cargando = true;
 
   onMount(async () => {
+    if (id) {
+      await cargarCotizacion();
+    }
+  });
+
+  async function cargarCotizacion() {
     try {
-      // CORREGIDO: Ruta relativa para que funcione en Vercel/Render
       const res = await axios.get(`/api/cotizacion/${id}`);
       cotizacion = res.data;
       cargando = false;
     } catch (error) {
       console.error(error);
-      Swal.fire("Error", "No se pudo cargar la cotización. Intente nuevamente.", "error");
-      dispatch('volver'); // Si falla, volvemos atrás automáticamente
+      Swal.fire("Error", "No se pudo cargar el documento.", "error");
+      dispatch('volver');
     }
-  });
-
-  // --- 1. FUNCIÓN GENERAR PDF ---
-  function descargarPDF() {
-    const element = document.getElementById('contenido-pdf');
-    
-    const nombreCliente = cotizacion.cliente_id 
-        ? cotizacion.cliente_id.nombre_completo 
-        : cotizacion.cliente.nombre;
-    
-    const opt = {
-      margin:       [0.3, 0.3, 0.3, 0.3], 
-      filename:     `Cotizacion_${nombreCliente}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, scrollY: 0 }, 
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-
-    // @ts-ignore
-    html2pdf().set(opt).from(element).save();
   }
 
-  // --- 2. FUNCIÓN WHATSAPP ---
+  function imprimir() {
+    window.print();
+  }
+
+  function volver() {
+    dispatch('volver');
+  }
+
+  // ✅ FUNCIÓN PARA ENVIAR WHATSAPP AUTOMÁTICO
   function enviarWhatsapp() {
-    const nombre = cotizacion.cliente_id ? cotizacion.cliente_id.nombre_completo : cotizacion.cliente.nombre;
-    let telefono = cotizacion.cliente_id ? cotizacion.cliente_id.whatsapp : cotizacion.cliente.whatsapp;
-    const auto = cotizacion.vehiculo.descripcion;
+      if (!cotizacion.cliente || !cotizacion.cliente.whatsapp) {
+          return Swal.fire("Sin número", "Este cliente no tiene número registrado.", "warning");
+      }
 
-    if (!telefono) {
-      Swal.fire('Error', 'Este cliente no tiene número de celular registrado.', 'error');
-      return;
-    }
+      // Limpiamos el número (quitamos espacios o guiones)
+      let numero = cotizacion.cliente.whatsapp.replace(/\D/g, '');
+      
+      // Si no tiene código de país (asumimos Bolivia 591 si empieza con 6 o 7 y tiene 8 dígitos)
+      if (numero.length === 8) {
+          numero = '591' + numero;
+      }
 
-    telefono = telefono.replace(/\D/g, ''); // Quitamos símbolos no numéricos
+      const nombre = getNombreCliente(cotizacion.cliente);
+      const auto = `${cotizacion.vehiculo.marca} ${cotizacion.vehiculo.modelo} ${cotizacion.vehiculo.anio}`;
+      const total = cotizacion.totales.total_usd.toLocaleString('en-US', {minimumFractionDigits: 2});
 
-    // Asumimos código de país si falta
-    if (telefono.length === 8) {
-      telefono = '591' + telefono;
-    }
+      // Mensaje estructurado y formal
+      const mensaje = `Estimado(a) *${nombre}*,\n\nLe envío la cotización formal detallada del vehículo:\n🚘 *${auto.toUpperCase()}*\n\n💰 Precio Final: *$${total} USD*\n\nAdjunto encontrará el detalle de los costos de importación y logística.\n\nAtentamente,\n*Bethel Motors*`;
 
-    const mensaje = `Hola *${nombre}*, le saluda Bethel Importaciones. 🇧🇴\n\nAdjunto le envío la cotización detallada para la importación de su *${auto} ${cotizacion.vehiculo.anio}*.\n\nPor favor revise el PDF. Quedo atento a sus consultas.\n\nSaludos!`;
-
-    const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, '_blank');
+      const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+      window.open(url, '_blank');
   }
 
-  function regresar() {
-    dispatch('volver'); 
+  function getNombreCliente(c) {
+      if (!c) return "CLIENTE GENERAL";
+      return (c.nombre_completo || c.nombre || "SIN NOMBRE").toUpperCase();
   }
 </script>
-<svelte:head>
-  <title>Bethel Motors</title>
-</svelte:head>
-{#if cargando}
-  <div class="loading">
-    <div class="spinner"></div>
-    <p>Generando vista previa...</p>
-  </div>
-{:else}
-  
-  <div class="contenedor-vista">
 
-    <div class="acciones no-print">
-      <button class="btn-pdf" on:click={descargarPDF}>📄 Descargar PDF</button>
-      <button class="btn-whatsapp" on:click={enviarWhatsapp}>📱 Enviar WhatsApp</button>
-      <button class="btn-volver" on:click={regresar}>🔙 Volver</button>
+{#if cargando}
+  <div class="loading-screen">Generando vista previa...</div>
+{:else if cotizacion}
+  <div class="print-container">
+    
+    <div class="toolbar no-print">
+        <div class="group-left">
+            <button class="btn-secondary" on:click={volver}>&larr; Regresar</button>
+        </div>
+        <div class="group-right">
+            <button class="btn-whatsapp" on:click={enviarWhatsapp}>Enviar WhatsApp</button>
+            <button class="btn-primary" on:click={imprimir}>Imprimir PDF</button>
+        </div>
     </div>
 
-    <div id="contenido-pdf" class="hoja-impresion">
+    <div class="sheet">
       
-      <header>
-        <div class="empresa">
-          <h1>BETHEL IMPORTACIONES</h1>
+      <header class="header">
+        <div class="brand-area">
+            <h1 class="brand-title">BETHEL MOTORS</h1>
+            <p class="brand-subtitle">IMPORTACIÓN DIRECTA & LOGÍSTICA INTERNACIONAL</p>
         </div>
-        <div class="titulo-doc">
-          <h2>COTIZACIÓN DE IMPORTACIÓN 2026</h2>
-          <p class="fecha">Fecha: {new Date(cotizacion.fecha).toLocaleDateString()}</p>
+        <div class="meta-data">
+            <div class="meta-row">
+                <span class="meta-label">COTIZACIÓN N°:</span>
+                <span class="meta-value">#{cotizacion._id.slice(-6).toUpperCase()}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">FECHA DE EMISIÓN:</span>
+                <span class="meta-value">{new Date(cotizacion.fecha).toLocaleDateString()}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">ASESOR COMERCIAL:</span>
+                <span class="meta-value">{cotizacion.asesor ? cotizacion.asesor.nombre.toUpperCase() : 'VENTAS'}</span>
+            </div>
         </div>
       </header>
 
-      <section class="datos-grid">
-        <div class="box">
-          <h3>CLIENTE</h3>
-          <p><strong>Nombre:</strong> {cotizacion.cliente_id ? cotizacion.cliente_id.nombre_completo : cotizacion.cliente.nombre}</p>
-          <p><strong>Contacto:</strong> {cotizacion.cliente_id ? cotizacion.cliente_id.whatsapp : cotizacion.cliente.whatsapp}</p>
-        </div>
-        <div class="box">
-          <h3>VEHÍCULO</h3>
-          <p><strong>Unidad:</strong> {cotizacion.vehiculo.descripcion}</p>
-          <p><strong>Año:</strong> {cotizacion.vehiculo.anio}</p>
-        </div>
+      <div class="separator-thick"></div>
+
+      <section class="info-section">
+          <h3 class="section-title">INFORMACIÓN DEL CLIENTE</h3>
+          <div class="info-grid">
+              <div class="info-item">
+                  <span class="label">NOMBRE / RAZÓN SOCIAL:</span>
+                  <span class="value">{getNombreCliente(cotizacion.cliente)}</span>
+              </div>
+              <div class="info-item">
+                  <span class="label">TELÉFONO / WHATSAPP:</span>
+                  <span class="value">{cotizacion.cliente ? cotizacion.cliente.whatsapp : '---'}</span>
+              </div>
+          </div>
       </section>
-<div class="table-scroll">
-      <table class="tabla-azul">
 
-        
-        <thead>
-          <tr>
-            <th>Concepto</th>
-            <th>Detalle / Justificación</th>
-            <th class="derecha">Monto USD</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Compra en Subasta</td>
-            <td>Precio de adjudicación (Bid)</td>
-            <td class="derecha">{cotizacion.costos.precio_subasta.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td>Factura</td>
-            <td>Facturación declarada e impuestos</td>
-            <td class="derecha">{cotizacion.costos.impuestos_subasta.toFixed(2)}</td>
-          </tr>
-          
-          <tr class="subtotal">
-            <td colspan="2">SUBTOTAL COMPRA + FACTURA</td>
-            <td class="derecha">{(cotizacion.costos.precio_subasta + cotizacion.costos.impuestos_subasta).toFixed(2)}</td>
-          </tr>
-
-          <tr>
-            <td>Giro al exterior (6%)</td>
-            <td>Calculado sobre subtotal de compra</td>
-            <td class="derecha">{cotizacion.costos.costo_giro.toFixed(2)}</td>
-          </tr>
-
-          <tr>
-            <td>Transporte Internacional</td>
-            <td>Logística EE.UU. – Chile – Bolivia</td>
-            <td class="derecha">{cotizacion.costos.transporte_terrestre.toFixed(2)}</td>
-          </tr>
-
-          <tr>
-            <td>Comisión Bettel</td>
-            <td>Gestión, acompañamiento y asesoría</td>
-            <td class="derecha">{cotizacion.costos.comision_gestion.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td>Trámites y Papeles</td>
-            <td>Gestión en frontera y despachante</td>
-            <td class="derecha">{cotizacion.costos.tramites_aduana.toFixed(2)}</td>
-          </tr>
-
-          {#if cotizacion.costos.reparaciones > 0}
-          <tr>
-            <td>Reparaciones / Otros</td>
-            <td>Detalles adicionales acordados</td>
-            <td class="derecha">{cotizacion.costos.reparaciones.toFixed(2)}</td>
-          </tr>
+      <section class="info-section">
+          <h3 class="section-title">DETALLES DEL VEHÍCULO</h3>
+          <div class="vehicle-grid">
+              <div class="v-item">
+                  <span class="v-label">MARCA</span>
+                  <span class="v-value">{cotizacion.vehiculo.marca.toUpperCase()}</span>
+              </div>
+              <div class="v-item">
+                  <span class="v-label">MODELO</span>
+                  <span class="v-value">{cotizacion.vehiculo.modelo.toUpperCase()}</span>
+              </div>
+              <div class="v-item">
+                  <span class="v-label">AÑO</span>
+                  <span class="v-value">{cotizacion.vehiculo.anio || cotizacion.vehiculo.año}</span>
+              </div>
+            
+              {#if cotizacion.vehiculo.motor}
+                <div class="v-item">
+                    <span class="v-label">MOTOR</span>
+                    <span class="v-value">{cotizacion.vehiculo.motor}</span>
+                </div>
+              {/if}
+              {#if cotizacion.vehiculo.transmision}
+                <div class="v-item">
+                    <span class="v-label">TRANSMISIÓN</span>
+                    <span class="v-value">{cotizacion.vehiculo.transmision}</span>
+                </div>
+              {/if}
+          </div>
+          {#if cotizacion.vehiculo.descripcion}
+            <div class="vehicle-notes">
+                <strong>OBSERVACIONES:</strong> {cotizacion.vehiculo.descripcion}
+            </div>
           {/if}
+      </section>
 
-        </tbody>
-        <tfoot>
-          <tr class="fila-total-usd">
-            <td colspan="2">TOTAL ESTIMADO (DÓLARES)</td>
-            <td class="derecha">$ {cotizacion.totales.total_usd.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-          </tr>
-          <tr class="fila-total-bob">
-            <td colspan="2">TOTAL EN BOLIVIANOS (T.C. {cotizacion.totales.tipo_cambio})</td>
-            <td class="derecha">Bs {cotizacion.totales.total_bob.toLocaleString('es-BO', {minimumFractionDigits: 2})}</td>
-          </tr>
-        </tfoot>
-      </table>
-</div>
+      <section class="cost-section">
+          <h3 class="section-title">DESGLOSE DE IMPORTACIÓN</h3>
+          <table class="cost-table">
+              <thead>
+                  <tr>
+                      <th>CONCEPTO</th>
+                      <th class="text-right">VALOR (USD)</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr>
+                      <td>Valor de Compra (Subasta)</td>
+                      <td class="text-right">${cotizacion.costos.precio_subasta.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                      <td>Impuestos & Fees en Origen</td>
+                      <td class="text-right">${cotizacion.costos.impuestos_subasta.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                      <td>Transferencia Bancaria Internacional</td>
+                      <td class="text-right">${cotizacion.costos.costo_giro.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                      <td>Transporte Interno (Grúa USA)</td>
+                      <td class="text-right">${cotizacion.costos.grua_usa.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                      <td>Transporte Terrestre (Puerto - Destino)</td>
+                      <td class="text-right">${cotizacion.costos.transporte_terrestre.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                      <td>Comisión Gestión & Logística</td>
+                      <td class="text-right">${cotizacion.costos.comision_gestion.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                      <td>Trámites Aduaneros & Documentación</td>
+                      <td class="text-right">${cotizacion.costos.tramites_aduana.toLocaleString()}</td>
+                  </tr>
+                  {#if cotizacion.costos.reparaciones > 0}
+                  <tr>
+                      <td>Reparaciones / Gastos Adicionales</td>
+                      <td class="text-right">${cotizacion.costos.reparaciones.toLocaleString()}</td>
+                  </tr>
+                  {/if}
+              </tbody>
+          </table>
+      </section>
 
-      <div class="contacto-final">
-        {#if cotizacion.asesor_id}
-          <p>👨‍💼 Asesor: <strong>{cotizacion.asesor_id.nombre}</strong></p>
-          <p>📞 {cotizacion.asesor_id.telefono || 'Sin teléfono directo'}</p>
-        {/if}
-        <div class="links-footer">
-            <span>📍 Cochabamba, Bolivia</span>
-            <span>🌐 Bethel Importaciones</span>
-        </div>
-      </div>
+      <section class="totals-section">
+          <div class="totals-box">
+              <div class="total-row usd">
+                  <span class="t-label">TOTAL INVERSIÓN (USD)</span>
+                  <span class="t-value">${cotizacion.totales.total_usd.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div class="total-row bob">
+                  <span class="t-label">ESTIMADO EN BOLIVIANOS (Bs)</span>
+                  <span class="t-value">Bs {cotizacion.totales.total_bob.toLocaleString('es-BO', {minimumFractionDigits: 2})}</span>
+              </div>
+          </div>
+          <p class="tc-note">Tipo de Cambio Referencial utilizado: <strong>{cotizacion.totales.tipo_cambio}</strong></p>
+      </section>
+
+      <footer class="footer">
+          <div class="terms">
+              <p><strong>TÉRMINOS Y CONDICIONES:</strong> Esta cotización es válida por 7 días calendario. Los costos de transporte marítimo y terrestre están sujetos a variaciones internacionales. La empresa no se hace responsable por demoras ajenas a la gestión logística (Aduanas, Clima, Paros).</p>
+          </div>
+          
+          <div class="signatures">
+              <div class="sign-box">
+                  <div class="line"></div>
+                  <span>CONFORMIDAD CLIENTE</span>
+              </div>
+              <div class="sign-box">
+                  <div class="line"></div>
+                  <span>AUTORIZADO BETHEL MOTORS</span>
+              </div>
+          </div>
+      </footer>
 
     </div>
   </div>
 {/if}
+
 <style>
-  /* --- CONTENEDOR PRINCIPAL (FONDO GRIS) --- */
-  .contenedor-vista {
-    background-color: #555;
-    padding: 20px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  /* CONFIGURACIÓN GENERAL */
+  :global(body) { background: #525659; margin: 0; }
+  .print-container { display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; color: #333; }
+  
+  /* BOTONERA MEJORADA */
+  .toolbar { 
+      background: white; padding: 15px 25px; border-radius: 8px; margin-bottom: 30px; 
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; max-width: 800px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  .group-right { display: flex; gap: 15px; }
+  
+  .btn-primary { background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+  .btn-primary:hover { background: #002244; }
+
+  .btn-secondary { background: transparent; border: 1px solid #666; color: #333; padding: 10px 20px; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+  .btn-secondary:hover { background: #eee; }
+
+  /* BOTÓN WHATSAPP */
+  .btn-whatsapp { 
+      background: #25D366; color: white; border: none; padding: 10px 20px; 
+      border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; 
+  }
+  .btn-whatsapp:hover { background: #128C7E; }
+
+  /* HOJA A4 */
+  .sheet {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm;
+      box-sizing: border-box;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
   }
 
-  /* --- LA HOJA DE PAPEL --- */
-  .hoja-impresion {
-    background: white;
-    width: 100%;
-    max-width: 800px; /* Ancho máximo en PC */
-    padding: 40px; 
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-    font-family: 'Arial', sans-serif;
-    color: #333;
-    margin-bottom: 30px;
-    box-sizing: border-box;
+  /* HEADER */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .brand-title { margin: 0; color: #003366; font-size: 26pt; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+  .brand-subtitle { margin: 5px 0 0 0; color: #666; font-size: 8pt; letter-spacing: 3px; font-weight: 600; }
+  
+  .meta-data { text-align: right; }
+  .meta-row { margin-bottom: 4px; font-size: 9pt; }
+  .meta-label { font-weight: bold; color: #555; margin-right: 5px; }
+  .meta-value { color: #000; font-family: monospace; font-size: 10pt; }
+
+  .separator-thick { height: 4px; background: #003366; margin: 15px 0 30px 0; }
+
+  /* TÍTULOS DE SECCIÓN */
+  .section-title { 
+      font-size: 10pt; font-weight: bold; color: #003366; 
+      border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 15px; 
+      text-transform: uppercase; letter-spacing: 1px;
   }
 
-  /* --- HEADER --- */
-  header { text-align: center; border-bottom: 3px solid #003366; padding-bottom: 20px; margin-bottom: 30px; }
-  h1 { margin: 0; color: #003366; letter-spacing: 1px; font-size: 1.8rem; }
-  h2 { margin: 10px 0; font-size: 1.1rem; background: #cc0000; display: inline-block; padding: 5px 15px; border-radius: 4px; color: #ffffff; }
-  .fecha { font-size: 0.9rem; color: #555; margin-top: 5px; }
+  /* CLIENTE & VEHÍCULO */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+  .info-item { display: flex; flex-direction: column; }
+  .label { font-size: 7pt; color: #888; margin-bottom: 3px; font-weight: bold; }
+  .value { font-size: 11pt; font-weight: 600; }
 
-  /* --- GRID DE DATOS (CLIENTE / VEHICULO) --- */
-  .datos-grid { display: flex; gap: 20px; margin-bottom: 30px; }
-  .box { flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9; }
-  .box h3 { margin-top: 0; font-size: 1rem; color: #003366; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-  .box p { margin: 5px 0; font-size: 0.9rem; word-wrap: break-word; }
-
-  /* --- TABLA --- */
-  .table-scroll { width: 100%; overflow-x: auto; } /* Permite scroll horizontal en móvil */
-  
-  .tabla-azul { width: 100%; border-collapse: collapse; margin-bottom: 30px; min-width: 500px; /* Fuerza ancho mínimo para que no se aplaste */ }
-  .tabla-azul th { background: #003366; color: white; padding: 10px; text-align: left; font-size: 0.9rem; }
-  .tabla-azul td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-  .tabla-azul .derecha { text-align: right; }
-  
-  .subtotal td { font-weight: bold; background: #eef2f5; color: #555; }
-  
-  tfoot td { padding: 12px; font-weight: bold; font-size: 1rem; }
-  .fila-total-usd { background: #cc0000; color: #ffffff; }
-  .fila-total-bob { background: #003366; color: white; }
-
-  /* --- FOOTER --- */
-  .contacto-final { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 0.9rem; color: #666; }
-  .links-footer { display: flex; gap: 20px; justify-content: center; margin-top: 10px; font-weight: bold; color: #003366; flex-wrap: wrap; }
-
-  /* --- BOTONES DE ACCIÓN --- */
-  .acciones { text-align: center; margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; width: 100%; }
-  
-  button { 
-    padding: 12px 15px; border: none; cursor: pointer; font-weight: bold; 
-    border-radius: 5px; font-size: 0.9rem; transition: transform 0.1s; 
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
-    display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 140px;
+  .vehicle-grid { 
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; 
+      background: #f8f9fa; padding: 15px; border: 1px solid #eee; margin-bottom: 30px; 
   }
-  button:hover { transform: scale(1.05); }
-  
-  .btn-pdf { background: #ffcc00; color: #003366; }
-  .btn-whatsapp { background: #25D366; color: white; }
-  .btn-volver { background: white; color: #333; }
+  .v-item { display: flex; flex-direction: column; }
+  .v-item.full-width { grid-column: span 3; }
+  .v-label { font-size: 7pt; color: #666; margin-bottom: 2px; text-transform: uppercase; }
+  .v-value { font-size: 10pt; font-weight: bold; color: #333; }
+  .mono { font-family: 'Courier New', monospace; letter-spacing: 1px; }
+  .vehicle-notes { margin-top: 10px; font-size: 9pt; font-style: italic; color: #555; padding: 0 15px; }
 
-  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: white; }
-  .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  /* TABLA COSTOS */
+  .cost-section { margin-bottom: 30px; }
+  .cost-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  .cost-table th { text-align: left; padding: 8px 10px; background: #003366; color: white; font-weight: normal; font-size: 8pt; letter-spacing: 1px; }
+  .cost-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  .cost-table tr:nth-child(even) { background-color: #fcfcfc; }
+  .text-right { text-align: right; }
+  .separator-row td { height: 10px; border: none; background: white !important; }
 
-  /* --- MODO CELULAR (RESPONSIVE) --- */
-  @media (max-width: 600px) {
-    .contenedor-vista { padding: 10px; } /* Menos borde gris */
-    .hoja-impresion { padding: 20px; width: 100%; } /* Hoja ocupa todo el ancho */
-    
-    h1 { font-size: 1.4rem; }
-    h2 { font-size: 0.9rem; }
-    
-    .datos-grid { flex-direction: column; gap: 10px; } /* Cajas una debajo de otra */
-    
-    /* En móvil, los botones se apilan */
-    .acciones { flex-direction: column; }
-    button { width: 100%; }
-    
-    /* Ajustes de fuente para que quepa */
-    .tabla-azul th, .tabla-azul td { font-size: 0.8rem; padding: 6px; }
-  }
+  /* TOTALES */
+  .totals-section { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 50px; }
+  .totals-box { background: #003366; color: white; padding: 20px; width: 300px; }
+  .total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .total-row.bob { margin-bottom: 0; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); }
+  .t-label { font-size: 8pt; opacity: 0.8; }
+  .t-value { font-size: 14pt; font-weight: bold; }
+  .total-row.usd .t-value { font-size: 18pt; color: #fff; }
+  .tc-note { margin-top: 5px; font-size: 8pt; color: #666; text-align: right; width: 300px; }
 
-  /* --- MODO IMPRESIÓN / PDF REAL --- */
+  /* FOOTER */
+  .footer { margin-top: auto; }
+  .terms { font-size: 7pt; color: #777; text-align: justify; margin-bottom: 50px; line-height: 1.4; }
+  .signatures { display: flex; justify-content: space-between; padding: 0 50px; }
+  .sign-box { text-align: center; width: 200px; }
+  .sign-box .line { border-top: 1px solid #333; margin-bottom: 5px; }
+  .sign-box span { font-size: 7pt; font-weight: bold; text-transform: uppercase; }
+
+  /* IMPRESIÓN */
   @media print {
-    .no-print { display: none !important; }
-    .contenedor-vista { background: white; padding: 0; margin: 0; }
-    .hoja-impresion { box-shadow: none; padding: 0; margin: 0; max-width: 100%; width: 100%; border: none; }
-    .table-scroll { overflow: visible; } /* En papel no hay scroll */
-    .tabla-azul { min-width: 100%; }
+      @page { margin: 0; size: A4; }
+      body { background: white; }
+      .no-print { display: none !important; }
+      .sheet { box-shadow: none; margin: 0; width: 100%; height: 100%; }
+      .print-container { padding: 0; display: block; }
+      .totals-box, .cost-table th, .vehicle-grid, .btn-whatsapp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>

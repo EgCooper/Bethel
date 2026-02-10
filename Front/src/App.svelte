@@ -8,6 +8,7 @@
   import Login from "./pages/Login.svelte"; 
   import Catalogo from "./pages/Catalogo.svelte"; 
   import DetalleAuto from "./pages/DetalleAuto.svelte"; 
+  import Contacto from "./pages/Contacto.svelte"; 
   
   // Vistas Privadas
   import Home from "./pages/Home.svelte";
@@ -19,9 +20,16 @@
 
   // --- ESTADO ---
   let usuario = null; 
-  let mostrandoLogin = false; 
+  let mostrandoLogin = false;
+  let mostrandoContacto = false; 
   let autoSeleccionado = null;
   let autoParaCotizar = null; 
+
+  // Navegación Admin
+  let paginaActual = 'inicio'; 
+  let cotizacionIdParaImprimir = null;
+  let cotizacionIdParaEditar = null;
+  let rutaDeRetorno = 'inicio'; // Variable clave para saber a dónde volver
 
   // --- CARGA INICIAL Y RUTAS ---
   onMount(async () => {
@@ -31,19 +39,18 @@
       usuario = JSON.parse(userGuardado);
     }
 
-    // 2. Manejar Navegación (Botón Atrás/Adelante)
+    // 2. Manejar Navegación (Botón Atrás/Adelante del navegador)
     window.onpopstate = (event) => {
         if (event.state && event.state.id) {
-             // Si el estado tiene ID, intentamos cargar ese auto
              cargarAutoPorId(event.state.id);
         } else {
-             // Si no hay estado, volvemos al inicio (cerrar modal)
              autoSeleccionado = null;
              mostrandoLogin = false;
+             mostrandoContacto = false;
         }
     };
 
-    // 3. Revisar URL Inicial (Ej: /detalles/123)
+    // 3. Revisar URL Inicial
     const ruta = window.location.pathname;
     if (ruta.startsWith('/detalles/')) {
         const idAuto = ruta.split('/')[2];
@@ -61,9 +68,27 @@
         }
     } catch (error) {
         console.error("No se pudo cargar el auto compartido:", error);
-        // Si falla, limpiamos la URL
         window.history.replaceState(null, '', '/');
     }
+  }
+
+  // --- NAVEGACIÓN PÚBLICA ---
+  
+  function irAContacto() {
+    mostrandoContacto = true;
+    window.scrollTo(0, 0);
+  }
+
+  function volverAlCatalogo() {
+    autoSeleccionado = null;
+    mostrandoContacto = false; 
+    mostrandoLogin = false;
+    window.history.pushState(null, '', '/');
+  }
+
+  function abrirDetalleAuto(event) {
+    autoSeleccionado = event.detail;
+    window.history.pushState({id: autoSeleccionado._id}, '', `/detalles/${autoSeleccionado._id}`);
   }
 
   // --- LÓGICA DE SESIÓN ---
@@ -88,24 +113,22 @@
         localStorage.removeItem("usuario");
         usuario = null;
         mostrandoLogin = false; 
+        mostrandoContacto = false; 
         autoSeleccionado = null;
         autoParaCotizar = null;
         paginaActual = 'inicio';
-        window.history.pushState(null, '', '/'); // Limpiar URL al salir
+        window.history.pushState(null, '', '/'); 
       }
     });
   }
 
   // --- NAVEGACIÓN INTERNA (Panel Admin) ---
-  let paginaActual = 'inicio'; 
-  let cotizacionIdParaImprimir = null;
-  let cotizacionIdParaEditar = null;
-  let rutaDeRetorno = 'inicio'; 
 
   async function irA(destino) {
+    // Si estoy cotizando y trato de salir, preguntar primero
     if (paginaActual === 'cotizar' && destino !== 'cotizar' && destino !== 'impresion') {
       const result = await Swal.fire({
-        title: 'Salir sin guardar',
+        title: '¿Salir sin guardar?',
         text: "Perderá los datos del formulario actual.",
         icon: 'warning',
         showCancelButton: true,
@@ -117,22 +140,39 @@
       if (!result.isConfirmed) return; 
     }
     
+    // Limpieza al entrar a Cotizar desde el menú (no desde inventario)
     if (destino === 'cotizar') {
-        cotizacionIdParaEditar = null;
-        autoParaCotizar = null; 
+        if (paginaActual !== 'inventario' && paginaActual !== 'historial') {
+            cotizacionIdParaEditar = null;
+            autoParaCotizar = null;
+            rutaDeRetorno = 'inicio';
+        }
     } 
     paginaActual = destino;
   }
 
-  // --- MANEJADORES DE EVENTOS ---
+  // --- MANEJADORES DE EVENTOS ADMIN ---
+  
   function alCotizarDesdeInventario(event) {
-    autoParaCotizar = event.detail; 
+    autoParaCotizar = event.detail.auto; 
     cotizacionIdParaEditar = null; 
+    
+    // Si venimos del inventario, al terminar de cotizar volvemos al inventario
+    rutaDeRetorno = 'inventario'; 
+    
     paginaActual = 'cotizar';     
   }
 
   function alGuardarCotizacion(event) {
+    // Si el evento indica cancelación (botón volver del cotizador)
+    if (event.detail && event.detail.cancelado) {
+        irA(rutaDeRetorno);
+        return;
+    }
+    
+    // Si se guardó, vamos a impresión
     cotizacionIdParaImprimir = event.detail.id;
+    // Si estaba editando, vuelvo al historial, si no, al inicio
     rutaDeRetorno = cotizacionIdParaEditar ? 'historial' : 'inicio';
     paginaActual = 'impresion'; 
   }
@@ -145,47 +185,48 @@
 
   function alEditarDesdeHistorial(event) {
     cotizacionIdParaEditar = event.detail.id; 
+    rutaDeRetorno = 'historial';
     paginaActual = 'cotizar'; 
   }
 
-  // ✅ ABRIR DETALLE Y CAMBIAR URL
-  function abrirDetalleAuto(event) {
-    autoSeleccionado = event.detail;
-    // Cambiamos la URL a /detalles/ID sin recargar
-    window.history.pushState({id: autoSeleccionado._id}, '', `/detalles/${autoSeleccionado._id}`);
-  }
-  
-  // ✅ CERRAR DETALLE Y LIMPIAR URL
-  function volverAlCatalogo() {
-    autoSeleccionado = null;
-    // Volvemos a la raíz /
-    window.history.pushState(null, '', '/');
-  }
-
 </script>
+
 <svelte:head>
   <title>Bethel Motors</title>
 </svelte:head>
+
 <main>
   
-  {#if !usuario}
+  {#if autoSeleccionado}
+      <DetalleAuto 
+        auto={autoSeleccionado} 
+        on:volver={volverAlCatalogo} 
+        on:irLogin={() => {
+            if (usuario) {
+                autoSeleccionado = null;
+                window.history.pushState(null, '', '/');
+            } else {
+                mostrandoLogin = true;
+            }
+        }}
+      />
+
+  {:else if !usuario}
+    
     {#if mostrandoLogin}
       <Login 
         on:loginExitoso={alLoguearse} 
         on:irCatalogo={() => mostrandoLogin = false} 
       />
-    
-    {:else if autoSeleccionado}
-       <DetalleAuto 
-         auto={autoSeleccionado} 
-         on:volver={volverAlCatalogo} 
-         on:irLogin={() => mostrandoLogin = true}
-       />
+
+    {:else if mostrandoContacto} 
+       <Contacto on:volver={volverAlCatalogo} />
        
     {:else}
       <Catalogo 
         on:irLogin={() => mostrandoLogin = true} 
         on:verDetalle={abrirDetalleAuto} 
+        on:irContacto={irAContacto} 
       />
     {/if}
 
@@ -202,6 +243,7 @@
 
         <button class="nav-btn" on:click={() => irA('inicio')}>Inicio</button>
         <button class="nav-btn" on:click={() => irA('inventario')}>Inventario</button>
+        <button class="nav-btn" on:click={() => irA('historial')}>Historial</button>
         
         {#if usuario.rol === 'admin'}
           <button class="nav-btn" on:click={() => irA('usuarios')}>Equipo</button>
@@ -212,6 +254,7 @@
     </nav>
 
     <div class="content">
+      
       {#if paginaActual === 'inicio'}
         <Home on:navegar={(e) => irA(e.detail)} />
       
@@ -220,23 +263,29 @@
           idEdicion={cotizacionIdParaEditar}
           autoPreseleccionado={autoParaCotizar} 
           on:guardado={alGuardarCotizacion} 
+          on:volver={() => irA(rutaDeRetorno)} 
         />
       
       {:else if paginaActual === 'historial'}
         <Historial 
           on:ver={alVerDesdeHistorial} 
           on:editar={alEditarDesdeHistorial} 
+          on:volver={() => irA('inicio')} 
         />
       
       {:else if paginaActual === 'usuarios'}
         <Usuarios />
       
       {:else if paginaActual === 'inventario'}
-        <Inventario on:cotizar={alCotizarDesdeInventario} />
+        <Inventario 
+            on:cotizar={alCotizarDesdeInventario} 
+            on:volver={() => irA('inicio')} 
+        />
       
       {:else if paginaActual === 'impresion'}
         <Impresion id={cotizacionIdParaImprimir} on:volver={() => irA(rutaDeRetorno)} />
       {/if}
+
     </div>
 
   {/if}

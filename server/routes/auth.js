@@ -1,21 +1,27 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import Usuario from '../models/Usuario.js'; // ⚠️ Importante: .js al final
+import Usuario from '../models/Usuario.js'; 
 
 const router = express.Router();
 
 // CLAVE SECRETA (Idealmente en .env)
 const JWT_SECRET = 'Cooperino9090!';
 
-// --- 1. REGISTRAR USUARIO ---
+// --- 1. REGISTRAR USUARIO (CREAR) ---
 router.post('/register', async (req, res) => {
     try {
-        const { nombre, username, password, rol, telefono } = req.body;
+        // ✅ CAMBIO: Recibimos 'email' en vez de 'username'
+        const { nombre, email, password, rol, telefono } = req.body;
 
-        // Verificar si ya existe
-        const existe = await Usuario.findOne({ username });
-        if (existe) return res.status(400).json({ error: "El usuario ya existe" });
+        // Validaciones básicas
+        if (!email || !password || !nombre) {
+            return res.status(400).json({ error: "Faltan campos obligatorios" });
+        }
+
+        // Verificar si ya existe el correo
+        const existe = await Usuario.findOne({ email });
+        if (existe) return res.status(400).json({ error: "El correo ya está registrado" });
 
         // Encriptar contraseña
         const salt = await bcrypt.genSalt(10);
@@ -24,10 +30,11 @@ router.post('/register', async (req, res) => {
         // Crear usuario
         const nuevoUsuario = new Usuario({
             nombre,
-            username,
+            email, // ✅ Guardamos email
             password: hashedPassword,
             rol: rol || 'asesor',
-            telefono: telefono || '' // Guardamos el teléfono que viene del form
+            telefono: telefono || '',
+            activo: true // Por defecto activo
         });
 
         await nuevoUsuario.save();
@@ -42,31 +49,37 @@ router.post('/register', async (req, res) => {
 // --- 2. LOGIN ---
 router.post('/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        // ✅ CAMBIO: Login con email
+        const { email, password } = req.body;
 
-        // 1. Buscar usuario
-        const usuario = await Usuario.findOne({ username });
+        // 1. Buscar usuario por email
+        const usuario = await Usuario.findOne({ email });
         if (!usuario) return res.status(400).json({ error: "Usuario no encontrado" });
 
-        // 2. Comparar contraseña
+        // 2. ⛔ VERIFICAR SI ESTÁ ACTIVO (NUEVO)
+        if (usuario.activo === false) {
+            return res.status(403).json({ error: "Su cuenta ha sido deshabilitada. Contacte al administrador." });
+        }
+
+        // 3. Comparar contraseña
         const validPassword = await bcrypt.compare(password, usuario.password);
         if (!validPassword) return res.status(400).json({ error: "Contraseña incorrecta" });
 
-        // 3. Crear Token
+        // 4. Crear Token
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre },
             JWT_SECRET,
-            { expiresIn: '12h' } // Aumenté un poco el tiempo de sesión
+            { expiresIn: '12h' }
         );
 
-        // 4. Responder (INCLUYENDO EL TELÉFONO)
+        // 5. Responder
         res.json({
             mensaje: "Bienvenido",
             token,
             usuario: {
                 id: usuario._id,
                 nombre: usuario.nombre,
-                username: usuario.username,
+                email: usuario.email, // Devolvemos email
                 rol: usuario.rol,
                 telefono: usuario.telefono
             }
@@ -103,12 +116,17 @@ router.delete('/users/:id', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, username, password, telefono, rol } = req.body;
+        const { nombre, email, password, telefono, rol, activo } = req.body;
 
-        // 1. Preparamos los datos a actualizar
-        let datos = { nombre, username, telefono, rol };
+        // 1. Preparamos los datos
+        let datos = { nombre, email, telefono, rol };
 
-        // 2. Solo si hay contraseña nueva la encriptamos
+        // Si envían el estado activo/inactivo, lo actualizamos
+        if (typeof activo !== 'undefined') {
+            datos.activo = activo;
+        }
+
+        // 2. Si hay contraseña nueva, la encriptamos
         if (password && password.trim() !== "") {
             const salt = await bcrypt.genSalt(10);
             datos.password = await bcrypt.hash(password, salt);
@@ -117,9 +135,22 @@ router.put('/users/:id', async (req, res) => {
         // 3. Actualizamos
         await Usuario.findByIdAndUpdate(id, datos);
         
-        res.json({ mensaje: "Usuario actualizado" });
+        res.json({ mensaje: "Usuario actualizado correctamente" });
     } catch (error) {
         res.status(500).json({ error: "Error al actualizar usuario" });
+    }
+});
+
+// --- 6. CAMBIAR ESTADO (ACTIVAR/DESACTIVAR) RÁPIDO ---
+router.patch('/users/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { activo } = req.body; // true o false
+
+        await Usuario.findByIdAndUpdate(id, { activo });
+        res.json({ mensaje: `Usuario ${activo ? 'activado' : 'deshabilitado'}` });
+    } catch (error) {
+        res.status(500).json({ error: "Error al cambiar estado" });
     }
 });
 

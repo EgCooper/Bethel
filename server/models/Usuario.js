@@ -1,14 +1,18 @@
+// Archivo: server/models/Usuario.js
 import mongoose from 'mongoose';
 
 const UsuarioSchema = new mongoose.Schema({
     nombre: { 
         type: String, 
-        required: true 
+        required: true,
+        trim: true
     },
-    username: { 
+    email: { 
         type: String, 
         required: true, 
-        unique: true 
+        unique: true,
+        trim: true,
+        lowercase: true
     },
     telefono: {
         type: String,
@@ -23,11 +27,14 @@ const UsuarioSchema = new mongoose.Schema({
         enum: ['admin', 'asesor'], 
         default: 'asesor'
     },
+    activo: {
+        type: Boolean,
+        default: true 
+    },
     fecha_creacion: { 
         type: Date, 
         default: Date.now 
     }
 });
 
-// Exportamos usando la sintaxis moderna (ES Modules)
 export default mongoose.model('Usuario', UsuarioSchema);

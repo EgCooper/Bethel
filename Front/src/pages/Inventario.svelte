@@ -27,12 +27,21 @@
 
   onMount(cargarInventario);
 
+  // ✅ FUNCIÓN VOLVER
+  function volver() {
+    dispatch('volver');
+  }
+
   function cotizarAuto(auto) { dispatch('cotizar', { auto }); }
+
+  function verEnWeb(id) {
+    window.open(`/detalles/${id}`, '_blank');
+  }
 
   async function cargarInventario() {
     try {
       const res = await axios.get("/api/vehiculos");
-      vehiculos = res.data;
+      vehiculos = res.data.reverse();
       cargando = false;
     } catch (error) { console.error(error); cargando = false; }
   }
@@ -52,8 +61,11 @@
 
   function cargarDatosEdicion(auto) {
     nuevoAuto = { 
-        ...auto, precio: auto.precio || auto.precio_usd, moneda: auto.moneda || 'USD',
-        situacion_legal: auto.situacion_legal || "No Despachado (Sin Papeles)", placa: auto.placa || ""
+        ...auto, 
+        precio: auto.precio || auto.precio_usd, 
+        moneda: auto.moneda || 'USD',
+        situacion_legal: auto.situacion_legal || "No Despachado (Sin Papeles)", 
+        placa: auto.placa || ""
     }; 
     idEdicion = auto._id; 
     archivosSeleccionados = []; previsualizaciones = [];
@@ -72,24 +84,32 @@
 
   async function guardarAuto() {
     if (!nuevoAuto.marca || !nuevoAuto.modelo || !nuevoAuto.precio || !nuevoAuto.vin) {
-      return Swal.fire({ title: "Campos Incompletos", text: "Llena los datos obligatorios.", icon: "warning", confirmButtonColor: "#003366" });
+      return Swal.fire({ title: "Campos Incompletos", text: "Llena los datos obligatorios (Marca, Modelo, Precio, VIN).", icon: "warning", confirmButtonColor: "#003366" });
     }
+
     try {
+      Swal.fire({ title: 'Procesando...', text: 'Guardando información...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
       if (idEdicion) {
         await axios.put(`/api/vehiculos/${idEdicion}`, nuevoAuto);
         Swal.fire({ title: "Actualizado", icon: "success", confirmButtonColor: "#003366" });
       } else {
         const formData = new FormData();
-        Object.keys(nuevoAuto).forEach(key => formData.append(key === 'año' ? 'anio' : key, nuevoAuto[key]));
+        Object.keys(nuevoAuto).forEach(key => {
+            if (key === 'año') formData.append('anio', nuevoAuto[key]);
+            formData.append(key, nuevoAuto[key]);
+        });
         archivosSeleccionados.forEach(archivo => formData.append('fotos', archivo));
 
-        Swal.fire({ title: 'Subiendo...', text: 'Guardando información e imágenes...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         await axios.post("/api/vehiculos", formData);
         Swal.fire({ title: "Guardado", icon: "success", confirmButtonColor: "#003366" });
       }
-      limpiarFormulario(); cargarInventario();
+      
+      limpiarFormulario(); 
+      cargarInventario();
     } catch (error) {
-      Swal.fire({ title: "Error", text: error.response?.data?.error || "Error al guardar", icon: "error", confirmButtonColor: "#003366" });
+      console.error(error);
+      Swal.fire({ title: "Error", text: error.response?.data?.error || "Error al guardar en el servidor", icon: "error", confirmButtonColor: "#003366" });
     }
   }
 
@@ -107,7 +127,10 @@
 
 <div class="page-container">
 
-  <h2 class="page-title">Gestión de Inventario</h2>
+  <div class="header-flex">
+    <button class="btn-volver" on:click={volver}>← Volver</button>
+    <h2 class="page-title">Gestión de Inventario</h2>
+    <div style="width: 80px;"></div> </div>
 
   <div class="layout-grid">
     
@@ -310,9 +333,23 @@
                 </div>
 
                 <div class="card-actions">
-                  <button class="btn-action btn-cotizar" on:click={() => cotizarAuto(auto)}>Cotizar</button>  
-                  <button class="btn-action btn-edit" on:click={() => cargarDatosEdicion(auto)}>Editar</button>
-                  <button class="btn-action btn-delete" on:click={() => eliminarAuto(auto._id)}>Borrar</button>
+                  
+                  <button class="btn-action btn-view" title="Ver en Web" on:click={() => verEnWeb(auto._id)}>
+                     Ver Web
+                  </button>
+                  
+                  <button class="btn-action btn-cotizar" title="Cotizar" on:click={() => cotizarAuto(auto)}>
+                     Cotizar
+                  </button>  
+                  
+                  <button class="btn-action btn-edit" title="Editar" on:click={() => cargarDatosEdicion(auto)}>
+                     Editar
+                  </button>
+                  
+                  <button class="btn-action btn-delete" title="Eliminar" on:click={() => eliminarAuto(auto._id)}>
+                     Borrar
+                  </button>
+
                 </div>
               </div>
             </div>
@@ -325,238 +362,159 @@
 </div>
 
 <style>
-  /* --- VARIABLES & BASE --- */
+  /* --- VARIABLES --- */
   :root {
-    --primary: #003366;
+    --primary: #003366; /* Azul Bethel */
     --primary-dark: #002244;
+    --red-bethel: #cc0000; /* Rojo Bethel */
     --bg-light: #f3f4f6;
     --white: #ffffff;
     --text-dark: #1f2937;
-    --text-light: #6b7280;
     --border: #e5e7eb;
     --radius: 8px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 
   .page-container {
-    max-width: 1350px; /* Ancho máximo mayor para que quepa todo bien */
+    max-width: 1350px;
     margin: 0 auto;
     padding: 20px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
     color: var(--text-dark);
   }
 
-  /* --- HEADER --- */
-  .brand-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding-bottom: 20px;
-    border-bottom: 3px solid var(--primary);
-    margin-bottom: 30px;
+  /* ✅ ESTILOS HEADER Y BOTÓN VOLVER */
+  .header-flex { 
+      display: flex; justify-content: space-between; align-items: center; 
+      margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; 
   }
-  .brand-logo { height: 50px; width: auto; object-fit: contain; }
-  .brand-header h1 {
-    margin: 0;
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--primary);
-    letter-spacing: -0.5px;
-  }
+  .page-title { margin: 0; color: var(--primary); }
 
-  .page-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: var(--text-dark);
+  .btn-volver { 
+      background: white; border: 1px solid var(--primary); color: var(--primary); 
+      padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s;
   }
+  .btn-volver:hover { background: var(--primary); color: white; }
 
-  /* --- LAYOUT GRID: AQUÍ ESTÁ EL CAMBIO DE ANCHO --- */
-  .layout-grid {
-    display: grid;
-    /* Columna Formulario (500px) | Columna Lista (El resto) */
-    grid-template-columns: 500px 1fr; 
-    gap: 30px;
-    align-items: start;
-  }
-
-  /* --- PANEL FORMULARIO --- */
-  .form-panel {
-    background: var(--white);
-    padding: 25px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-    position: sticky;
-    top: 20px; 
-  }
-  .form-panel.editando {
-    border: 2px solid #f59e0b;
-    background: #fffbeb;
-  }
-
-  .form-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .form-header h3 { margin: 0; font-size: 1.1rem; color: var(--primary); }
-  .btn-text-cancel { background: none; border: none; color: var(--text-light); text-decoration: underline; cursor: pointer; font-size: 0.85rem; }
-
-  /* --- INPUTS --- */
-  .modern-form .input-group { margin-bottom: 15px; }
+  /* --- LAYOUT Y FORMULARIO --- */
+  .layout-grid { display: grid; grid-template-columns: 500px 1fr; gap: 30px; align-items: start; }
+  .form-panel { background: var(--white); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); position: sticky; top: 20px; }
+  .form-panel.editando { border: 2px solid #f59e0b; background: #fffbeb; }
+  .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .form-header h3 { margin: 0; color: var(--primary); }
+  
+  /* Inputs y Labels */
+  .input-group { margin-bottom: 15px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
   .full { grid-column: 1 / -1; }
-
-  label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 5px;
-  }
-
-  input, select, textarea {
-    width: 100%;
-    padding: 12px 14px; /* Un poco más de padding */
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    background: #f9fafb;
-    transition: all 0.2s;
-    box-sizing: border-box;
-  }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #333; }
+  input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+  input:focus, select:focus { border-color: var(--primary); outline: none; }
   
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    background: var(--white);
-    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
-  }
+  /* Precio Wrapper */
+  .precio-wrapper { display: flex; width: 100%; }
+  .precio-wrapper input { border-top-right-radius: 0; border-bottom-right-radius: 0; flex: 1; }
+  .currency-select { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; background: #eee; width: 100px; text-align: center; font-weight: bold; }
 
-  /* --- SELECTOR DE PRECIO ARREGLADO --- */
-  .precio-wrapper { display: flex; gap: 0; width: 100%; }
-  
-  .precio-wrapper input { 
-    border-top-right-radius: 0; 
-    border-bottom-right-radius: 0; 
-    flex: 1; 
-    min-width: 0; /* Evita desbordamiento */
-  }
-  
-  .currency-select { 
-    border-top-left-radius: 0; 
-    border-bottom-left-radius: 0; 
-    border-left: none; 
-    background: #e5e7eb; 
-    font-weight: bold; 
-    /* ANCHO FIJO PARA QUE NO SE CORTE */
-    width: 120px; 
-    flex-shrink: 0;
-    text-align: center;
-  }
-
-  /* FILE UPLOAD */
-  .file-drop-area {
-    position: relative;
-    padding: 20px;
-    border: 2px dashed #cbd5e1;
-    border-radius: 6px;
-    text-align: center;
-    background: #f8fafc;
-    transition: 0.2s;
-  }
-  .file-drop-area:hover { border-color: var(--primary); background: #f0f9ff; }
-  .file-drop-area input {
-    position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
-  }
-  .file-msg { color: var(--text-light); font-size: 0.9rem; pointer-events: none; }
-
+  /* File Upload */
+  .file-drop-area { position: relative; padding: 20px; border: 2px dashed #ccc; border-radius: 6px; text-align: center; background: #f9f9f9; }
+  .file-drop-area input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
   .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 5px; margin-top: 10px; }
-  .thumb-wrapper img { width: 100%; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
+  .thumb-wrapper img { width: 100%; height: 50px; object-fit: cover; border-radius: 4px; }
 
-  /* BOTONES FORMULARIO */
+  /* Botones Formulario */
   .form-actions { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-  .btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 1rem; }
-  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
-  .btn-secondary { background: #e5e7eb; color: #374151; padding: 10px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-  .btn-secondary:hover { background: #d1d5db; }
+  .btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  .btn-secondary { background: #eee; color: #333; padding: 10px; border: none; border-radius: 6px; cursor: pointer; }
+  .btn-text-cancel { background: none; border: none; text-decoration: underline; cursor: pointer; color: #666; }
+  .alert-box { background: #fff3cd; padding: 10px; text-align: center; border-radius: 6px; font-size: 0.85rem; }
 
-  .alert-box { background: #fffbeb; color: #b45309; padding: 10px; border-radius: 6px; font-size: 0.85rem; border: 1px solid #fcd34d; text-align: center; }
+  /* --- LISTA Y TARJETAS --- */
+  .list-header h3 { margin: 0 0 20px 0; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 
-  /* --- COLUMNA LISTA --- */
-  .list-header { margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-  .list-header h3 { margin: 0; color: var(--text-dark); font-size: 1.2rem; }
+  .card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.2s; }
+  .card:hover { transform: translateY(-3px); }
+  .card.active-edit { border: 2px solid var(--primary); }
 
-  .cards-grid {
-    display: grid;
-    /* Ajuste responsivo de la cuadrícula */
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-  }
-
-  /* --- TARJETA AUTO --- */
-  .card {
-    background: var(--white);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: 1px solid var(--border);
-    display: flex; flex-direction: column;
-  }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-  .card.active-edit { border: 2px solid var(--primary); ring: 2px solid rgba(0,51,102,0.2); }
-
-  .card-img { height: 160px; background: #f3f4f6; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .card-img { height: 160px; background: #eee; position: relative; }
   .card-img img { width: 100%; height: 100%; object-fit: cover; }
-  .no-img { color: #9ca3af; font-weight: 600; font-size: 0.9rem; }
-
-  .badge-loc { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; color: white; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-  .badge-loc.bo { background: #10b981; } 
-  .badge-loc.cl { background: #f59e0b; } 
-  .badge-loc.usa { background: var(--primary); }
+  .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-weight: bold; }
+  .badge-loc { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; color: white; text-transform: uppercase; }
+  .badge-loc.bo { background: #28a745; } .badge-loc.cl { background: #ffc107; color: #333; } .badge-loc.usa { background: var(--primary); }
 
   .card-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
-  .card-body h4 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #111827; margin-bottom: 2px; }
-  .card-year { font-size: 0.9rem; color: #6b7280; font-weight: 500; margin-bottom: 8px; display: block; }
+  .card-body h4 { margin: 0; font-size: 1.1rem; color: #333; }
+  .card-year { font-size: 0.9rem; color: #666; margin-bottom: 8px; }
+  
+  .legal-pill { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; width: fit-content; margin-bottom: 10px; }
+  .legal-pill.ok { background: #d4edda; color: #155724; } .legal-pill.warn { background: #fff3cd; color: #856404; }
 
-  .legal-pill { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; width: fit-content; margin-bottom: 10px; }
-  .legal-pill.ok { background: #d1fae5; color: #065f46; }
-  .legal-pill.warn { background: #fef3c7; color: #92400e; }
+  .card-price { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-top: auto; margin-bottom: 15px; }
+  .card-price small { font-size: 0.9rem; font-weight: 500; color: #666; }
 
-  .card-price { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-top: auto; margin-bottom: 15px; }
-  .card-price small { font-size: 0.8rem; font-weight: 500; color: #6b7280; }
-
-  .card-actions { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 5px; }
-  .btn-action { padding: 8px; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
-  .btn-cotizar { background: var(--primary); color: white; }
-  .btn-cotizar:hover { background: var(--primary-dark); }
-  .btn-edit { background: #e0f2fe; color: #0369a1; }
-  .btn-edit:hover { background: #bae6fd; }
-  .btn-delete { background: #fee2e2; color: #b91c1c; }
-  .btn-delete:hover { background: #fecaca; }
-
-  .loading, .empty-state { padding: 40px; text-align: center; color: var(--text-light); background: white; border-radius: var(--radius); }
-
-  /* --- MEDIA QUERIES (RESPONSIVE) --- */
-  @media (max-width: 1100px) {
-    /* En Tablet: Formulario arriba (ancho completo), lista abajo */
-    .layout-grid {
-      grid-template-columns: 1fr; 
-    }
-    .form-panel { position: static; max-width: 800px; margin: 0 auto; } 
+  .card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 Columnas */
+    gap: 10px;
+  }
+  
+  .btn-action {
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
   }
 
+  /* AZUL BETHEL (Primario) */
+  .btn-view {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-view:hover { background: var(--primary-dark); }
+
+  /* BLANCO CON BORDE AZUL (Secundario) */
+  .btn-cotizar {
+    background: white;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  .btn-cotizar:hover { background: #f0f7ff; }
+
+  /* GRIS OSCURO (Neutro/Admin) */
+  .btn-edit {
+    background: #4b5563;
+    color: white;
+  }
+  .btn-edit:hover { background: #374151; }
+
+  /* ROJO BETHEL (Alerta) */
+  .btn-delete {
+    background: var(--red-bethel);
+    color: white;
+  }
+  .btn-delete:hover { background: #a50000; }
+
+
+  .loading, .empty-state { padding: 40px; text-align: center; color: #666; background: white; border-radius: var(--radius); }
+
+  @media (max-width: 1100px) {
+    .layout-grid { grid-template-columns: 1fr; }
+    .form-panel { position: static; max-width: 800px; margin: 0 auto; }
+  }
   @media (max-width: 600px) {
     .page-container { padding: 15px; }
-    /* Móvil: Inputs apilados (1 columna) para que sean grandes */
     .form-row { grid-template-columns: 1fr; gap: 0; }
-    .brand-header h1 { font-size: 1.5rem; }
-    .brand-logo { height: 40px; }
-    .cards-grid { grid-template-columns: 1fr; } /* 1 tarjeta por fila en móvil */
+    .cards-grid { grid-template-columns: 1fr; }
+    /* Ajuste para header en celular */
+    .header-flex { flex-direction: column; gap: 10px; text-align: center; }
+    .header-flex div { display: none; }
   }
 </style>

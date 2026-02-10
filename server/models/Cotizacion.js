@@ -1,59 +1,43 @@
 import mongoose from 'mongoose';
 
-const cotizacionSchema = new mongoose.Schema({
-    asesor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
-    cliente_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente' },
-    // RELACIÓN CON EL ASESOR (NUEVO)
-    asesor_id: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Usuario', // Conecta con la colección de Usuarios
-        required: true 
-    },
+const CotizacionSchema = new mongoose.Schema({
+    cliente: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', required: true },
+    asesor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
     
-    vehiculo: {
-        descripcion: { type: String, required: true }, // Ej: Mazda CX5 2024
-        anio: Number,
-        vin_lote: String
+    // ✅ NUEVO CAMPO: ESTADO
+    estado: { 
+        type: String, 
+        default: 'Borrador',
+        enum: ['Borrador', 'Aprobada', 'En Tránsito', 'En Aduana', 'Entregada', 'Cancelada'] 
     },
 
-    // AQUI ESTÁ LA ESTRUCTURA PARA JUSTIFICAR GASTOS EN LA IMPRESIÓN
+    vehiculo: {
+        marca: String,
+        modelo: String,
+        anio: Number,
+        vin: String,
+        descripcion: String
+    },
+
     costos: {
-        // 1. Compra
-        precio_subasta: { type: Number, required: true },
-        impuestos_subasta: { type: Number, default: 0 },
-        
-        // 2. Bancario
-        costo_giro: { type: Number, default: 0 }, // Se calculará como 6% aprox
-        
-        // 3. Logística USA
-        grua_usa: { type: Number, default: 0 },
-        
-        // 4. Logística Internacional
-        flete_maritimo: { type: Number, default: 0 },
-        transporte_terrestre: { type: Number, default: 0 },
-        
-        // 5. Operativo 
-        comision_gestion: { type: Number, default: 900 }, // Tu ganancia
-        tramites_aduana: { type: Number, default: 700 },
-        
-        // 6. Extras
-        reparaciones: { type: Number, default: 0 },
-        otros: { type: Number, default: 0 }
+        precio_subasta: Number,
+        impuestos_subasta: Number,
+        grua_usa: Number,
+        flete_maritimo: Number,
+        transporte_terrestre: Number,
+        comision_gestion: Number,
+        tramites_aduana: Number,
+        reparaciones: Number,
+        costo_giro: Number
     },
 
     totales: {
+        tipo_cambio: Number,
         total_usd: Number,
-        tipo_cambio: { type: Number, default: 6.97 }, // Modificable
         total_bob: Number
     },
 
-    estado: { 
-        type: String, 
-        // Agregamos estados de negocio reales
-        enum: ['Borrador', 'Aprobada', 'En Tránsito', 'En Aduana', 'Entregada', 'Cancelada'], 
-        default: 'Borrador' 
-    },
     fecha: { type: Date, default: Date.now }
 });
 
-export default mongoose.model('Cotizacion', cotizacionSchema);
+export default mongoose.model('Cotizacion', CotizacionSchema);
