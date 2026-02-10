@@ -15,7 +15,7 @@
   } else {
       // ☁️ MODO PRODUCCIÓN (Internet)
       // Usamos ruta relativa "" para que se conecte al mismo dominio donde está alojada la web
-      axios.defaults.baseURL = ""; 
+      axios.defaults.baseURL = "https://bethel-backend-hbst.onrender.com/"; 
       console.log("🚀 Modo Producción: Conectado al Servidor Real");
   }
   // =====================================================
