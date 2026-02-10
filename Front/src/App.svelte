@@ -4,6 +4,22 @@
   import Swal from "sweetalert2";
   import axios from "axios";
 
+  // =====================================================
+  // 🌍 CONFIGURACIÓN DE URL DEL SERVIDOR (AXIOS)
+  // =====================================================
+  // Esto arregla el error de conexión en el Deploy
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      // 🏠 MODO DESARROLLO (Tu PC)
+      axios.defaults.baseURL = "http://localhost:3000"; 
+      console.log("🔧 Modo Desarrollo: Conectado a Localhost:3000");
+  } else {
+      // ☁️ MODO PRODUCCIÓN (Internet)
+      // Usamos ruta relativa "" para que se conecte al mismo dominio donde está alojada la web
+      axios.defaults.baseURL = ""; 
+      console.log("🚀 Modo Producción: Conectado al Servidor Real");
+  }
+  // =====================================================
+
   // Vistas Públicas
   import Login from "./pages/Login.svelte"; 
   import Catalogo from "./pages/Catalogo.svelte"; 
@@ -157,22 +173,19 @@
     autoParaCotizar = event.detail.auto; 
     cotizacionIdParaEditar = null; 
     
-    // Si venimos del inventario, al terminar de cotizar volvemos al inventario
+    // Si venimos del inventario, volvemos al inventario
     rutaDeRetorno = 'inventario'; 
     
     paginaActual = 'cotizar';     
   }
 
   function alGuardarCotizacion(event) {
-    // Si el evento indica cancelación (botón volver del cotizador)
+    // Si el evento indica cancelación, volvemos atrás
     if (event.detail && event.detail.cancelado) {
         irA(rutaDeRetorno);
         return;
     }
-    
-    // Si se guardó, vamos a impresión
     cotizacionIdParaImprimir = event.detail.id;
-    // Si estaba editando, vuelvo al historial, si no, al inicio
     rutaDeRetorno = cotizacionIdParaEditar ? 'historial' : 'inicio';
     paginaActual = 'impresion'; 
   }
@@ -254,7 +267,6 @@
     </nav>
 
     <div class="content">
-      
       {#if paginaActual === 'inicio'}
         <Home on:navegar={(e) => irA(e.detail)} />
       
@@ -270,7 +282,7 @@
         <Historial 
           on:ver={alVerDesdeHistorial} 
           on:editar={alEditarDesdeHistorial} 
-          on:volver={() => irA('inicio')} 
+          on:volver={() => irA('inicio')}
         />
       
       {:else if paginaActual === 'usuarios'}
@@ -279,13 +291,12 @@
       {:else if paginaActual === 'inventario'}
         <Inventario 
             on:cotizar={alCotizarDesdeInventario} 
-            on:volver={() => irA('inicio')} 
+            on:volver={() => irA('inicio')}
         />
       
       {:else if paginaActual === 'impresion'}
         <Impresion id={cotizacionIdParaImprimir} on:volver={() => irA(rutaDeRetorno)} />
       {/if}
-
     </div>
 
   {/if}
