@@ -89,6 +89,7 @@
       </div>
 
       <button class="btn-login" on:click={irAlLogin}>Soy Asesor 🔒</button>
+      
     </div>
   </header>
 

@@ -6,12 +6,12 @@
   // ESTADO
   let usuarios = [];
   let cargando = true;
-  let idEdicion = null; // Si tiene valor, estamos editando
+  let idEdicion = null;
 
-  // FORMULARIO (Modelo con email)
+  // FORMULARIO
   let nuevoUsuario = {
     nombre: "",
-    email: "", // ✅ CAMBIADO DE USERNAME A EMAIL
+    email: "",
     password: "",
     telefono: "",
     rol: "asesor",
@@ -28,12 +28,6 @@
       cargando = false;
     } catch (error) {
       console.error(error);
-      Swal.fire({
-        title: "Error", 
-        text: "No se pudieron cargar los usuarios",
-        icon: "error", 
-        confirmButtonColor: "#003366"
-      });
       cargando = false;
     }
   }
@@ -42,8 +36,8 @@
   function cargarDatosEdicion(usuario) {
     nuevoUsuario = { 
         nombre: usuario.nombre,
-        email: usuario.email, // ✅
-        password: "", // Seguridad: No cargamos la pass
+        email: usuario.email, 
+        password: "", 
         telefono: usuario.telefono || "",
         rol: usuario.rol,
         activo: usuario.activo !== undefined ? usuario.activo : true
@@ -57,222 +51,203 @@
   }
 
   function limpiarFormulario() {
-    nuevoUsuario = { 
-        nombre: "", 
-        email: "", 
-        password: "", 
-        telefono: "", 
-        rol: "asesor", 
-        activo: true 
-    };
+    nuevoUsuario = { nombre: "", email: "", password: "", telefono: "", rol: "asesor", activo: true };
     idEdicion = null;
   }
 
-  // --- GUARDAR (CREAR / EDITAR) ---
+  // --- GUARDAR ---
   async function guardarUsuario() {
-    // 1. Validaciones
     if (!nuevoUsuario.nombre || !nuevoUsuario.email) {
-      return Swal.fire('Atención', 'Nombre y Email son obligatorios', 'warning');
+      return Swal.fire({ title: 'Datos Incompletos', text: 'Nombre y Email son obligatorios', icon: 'warning', confirmButtonColor: '#003366' });
     }
 
-    // Validación de contraseña para nuevos usuarios
-    if (!idEdicion) {
-        if (!nuevoUsuario.password || nuevoUsuario.password.length < 8) {
-            return Swal.fire('Seguridad', 'La contraseña debe tener al menos 8 caracteres', 'warning');
-        }
-    } else {
-        // Si está editando y puso contraseña, verificar longitud
-        if (nuevoUsuario.password && nuevoUsuario.password.length > 0 && nuevoUsuario.password.length < 8) {
-             return Swal.fire('Seguridad', 'La nueva contraseña es muy corta (mínimo 8)', 'warning');
-        }
+    if (!idEdicion && (!nuevoUsuario.password || nuevoUsuario.password.length < 8)) {
+        return Swal.fire({ title: 'Seguridad', text: 'La contraseña debe tener al menos 8 caracteres', icon: 'warning', confirmButtonColor: '#003366' });
     }
 
     try {
-      Swal.fire({ title: 'Guardando...', didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'Procesando...', didOpen: () => Swal.showLoading() });
 
       if (idEdicion) {
-        // ACTUALIZAR (PUT)
         await axios.put(`/auth/users/${idEdicion}`, nuevoUsuario);
-        Swal.fire('Actualizado', 'Usuario modificado correctamente', 'success');
+        Swal.fire({ title: 'Actualizado', icon: 'success', timer: 1500, showConfirmButton: false });
       } else {
-        // CREAR (POST)
         await axios.post("/auth/register", nuevoUsuario);
-        Swal.fire('Creado', 'Usuario registrado correctamente', 'success');
+        Swal.fire({ title: 'Creado', icon: 'success', timer: 1500, showConfirmButton: false });
       }
       
       limpiarFormulario();
       cargarUsuarios();
 
     } catch (error) {
-      Swal.fire('Error', error.response?.data?.error || "Ocurrió un error", 'error');
+      Swal.fire({ title: 'Error', text: error.response?.data?.error || "Ocurrió un error", icon: 'error', confirmButtonColor: '#cc0000' });
     }
   }
 
-  // --- CAMBIAR ESTADO RÁPIDO (Toggle) ---
+  // --- TOGGLE ESTADO ---
   async function toggleEstado(usuario) {
     try {
         const nuevoEstado = !usuario.activo;
         await axios.patch(`/auth/users/${usuario._id}/status`, { activo: nuevoEstado });
-        // Actualizamos localmente para que se vea rápido
         usuario.activo = nuevoEstado; 
-        usuarios = usuarios; // Reactividad Svelte
-        
-        const Toast = Swal.mixin({
-            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000
-        });
-        Toast.fire({
-            icon: nuevoEstado ? 'success' : 'warning',
-            title: `Usuario ${nuevoEstado ? 'Activado' : 'Deshabilitado'}`
-        });
-
+        usuarios = usuarios; 
     } catch (error) {
-        Swal.fire('Error', 'No se pudo cambiar el estado', 'error');
+        console.error(error);
     }
   }
 
   // --- ELIMINAR ---
-  async function eliminarUsuario(id, nombre) {
+  async function eliminarUsuario(id) {
     const miUsuario = JSON.parse(localStorage.getItem("usuario"));
     if (miUsuario.id === id) {
-      return Swal.fire('Error', 'No puedes eliminar tu propia cuenta', 'error');
+      return Swal.fire({ title: 'Acción Bloqueada', text: 'No puedes eliminar tu propia cuenta', icon: 'error', confirmButtonColor: '#cc0000' });
     }
 
     const confirm = await Swal.fire({
-      title: `¿Eliminar a ${nombre}?`,
-      text: "Esta acción no se puede deshacer.",
+      title: '¿Eliminar Usuario?',
+      text: "Esta acción es permanente.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Sí, eliminar"
+      confirmButtonColor: "#cc0000",
+      cancelButtonColor: "#003366",
+      confirmButtonText: "Eliminar"
     });
 
     if (confirm.isConfirmed) {
       try {
         await axios.delete(`/auth/users/${id}`);
         if (idEdicion === id) limpiarFormulario();
-        Swal.fire('Eliminado', 'El usuario ha sido borrado.', 'success');
         cargarUsuarios();
+        Swal.fire({ title: 'Eliminado', icon: 'success', timer: 1500, showConfirmButton: false });
       } catch (error) {
-        Swal.fire('Error', 'No se pudo eliminar', 'error');
+        Swal.fire({ title: 'Error', icon: 'error', confirmButtonColor: '#cc0000' });
       }
     }
   }
 </script>
 
-<div class="users-container">
+<div class="page-container">
   
-  <div class="header-section">
-    <h2> Gestión de Equipo</h2>
-    <p>Administra accesos y roles del personal.</p>
+  <div class="header-flex">
+    <h2 class="page-title">Gestión de Equipo</h2>
+    <p class="subtitle">Administra los accesos y roles del personal.</p>
   </div>
 
-  <div class="layout">
+  <div class="layout-grid">
     
-    <div class="card form-card {idEdicion ? 'editando' : ''}">
-      <div class="header-form">
-          <h3>{idEdicion ? '✏️ Editando a ' + nuevoUsuario.nombre : '➕ Nuevo Usuario'}</h3>
+    <div class="panel form-panel {idEdicion ? 'editando' : ''}">
+      <div class="form-header">
+          <h3>{idEdicion ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
       </div>
       
-      <form on:submit|preventDefault={guardarUsuario}>
+      <form on:submit|preventDefault={guardarUsuario} class="modern-form">
         
         <div class="form-group">
-          <label>Nombre Completo *</label>
+          <label>Nombre Completo</label>
           <input type="text" bind:value={nuevoUsuario.nombre} placeholder="Ej: Juan Pérez" required>
         </div>
 
         <div class="form-group">
-          <label>Email (Usuario) *</label>
+          <label>Email (Acceso)</label>
           <input type="email" bind:value={nuevoUsuario.email} placeholder="juan@bethel.com" required>
         </div>
 
         <div class="form-group">
           <label>
             Contraseña 
-            {#if idEdicion} <small>(Dejar vacío para no cambiar)</small> {/if}
-            {#if !idEdicion} * <small>(Mín. 8 caracteres)</small> {/if}
+            {#if idEdicion} <span class="hint">(Opcional)</span> {/if}
           </label>
           <input type="password" bind:value={nuevoUsuario.password} placeholder="••••••••">
         </div>
 
         <div class="form-group">
-          <label>Celular / WhatsApp</label>
+          <label>Teléfono</label>
           <input type="text" bind:value={nuevoUsuario.telefono} placeholder="Ej: 77778888">
         </div>
 
         <div class="row-group">
             <div class="form-group half">
-            <label>Rol</label>
-            <select bind:value={nuevoUsuario.rol}>
-                <option value="asesor">Asesor de Ventas</option>
-                <option value="admin">Administrador</option>
-            </select>
+                <label>Rol</label>
+                <select bind:value={nuevoUsuario.rol}>
+                    <option value="asesor">Asesor</option>
+                    <option value="admin">Admin</option>
+                </select>
             </div>
 
             <div class="form-group half">
-            <label>Estado</label>
-            <select bind:value={nuevoUsuario.activo}>
-                <option value={true}>✅ Activo</option>
-                <option value={false}>⛔ Deshabilitado</option>
-            </select>
+                <label>Estado</label>
+                <select bind:value={nuevoUsuario.activo}>
+                    <option value={true}>Activo</option>
+                    <option value={false}>Inactivo</option>
+                </select>
             </div>
         </div>
 
         <div class="actions">
-            <button type="submit" class="btn-save">
-                {idEdicion ? 'Actualizar' : 'Crear Usuario'}
+            <button type="submit" class="btn-pill btn-solid-blue full-width">
+                {idEdicion ? 'Guardar Cambios' : 'Crear Usuario'}
             </button>
             
             {#if idEdicion}
-                <button type="button" class="btn-cancel" on:click={cancelarEdicion}>Cancelar</button>
+                <button type="button" class="btn-pill btn-outline-red full-width" on:click={cancelarEdicion}>
+                    Cancelar
+                </button>
             {/if}
         </div>
       </form>
     </div>
 
-    <div class="card list-card">
-      <div class="header-list">
+    <div class="panel list-panel">
+      <div class="list-header">
           <h3>Usuarios ({usuarios.length})</h3>
-          <button class="btn-refresh" on:click={cargarUsuarios} title="Recargar">↻</button>
+          <button class="btn-text" on:click={cargarUsuarios}>Recargar</button>
       </div>
       
       {#if cargando}
-        <div class="loading">Cargando equipo...</div>
+        <div class="loading">Cargando datos...</div>
       {:else}
-        <div class="table-responsive">
-            <table class="user-table">
+        <div class="table-container">
+            <table class="custom-table">
             <thead>
                 <tr>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th class="text-right">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {#each usuarios as u}
-                <tr class="{idEdicion === u._id ? 'seleccionado' : ''} {u.activo ? '' : 'inactivo'}">
-                    <td>
-                        <div class="user-info">
-                            <span class="user-name">{u.nombre}</span>
-                            <span class="user-email">{u.email}</span>
-                            {#if u.telefono} <span class="user-phone">📞 {u.telefono}</span> {/if}
+                <tr class="{idEdicion === u._id ? 'active-row' : ''}">
+                    <td data-label="Usuario">
+                        <div class="user-block">
+                            <span class="name">{u.nombre}</span>
+                            <span class="email">{u.email}</span>
+                            {#if u.telefono} <span class="phone">{u.telefono}</span> {/if}
                         </div>
                     </td>
-                    <td>
-                        <span class="badge role {u.rol}">
-                            {u.rol === 'admin' ? ' Admin' : ' Asesor'}
+                    
+                    <td data-label="Rol">
+                        <span class="role-badge {u.rol}">
+                            {u.rol === 'admin' ? 'ADMIN' : 'ASESOR'}
                         </span>
                     </td>
-                    <td>
-                        <button class="btn-toggle {u.activo ? 'on' : 'off'}" on:click={() => toggleEstado(u)}>
-                            {u.activo ? 'Activo' : 'Inactivo'}
-                        </button> 
+                    
+                    <td data-label="Estado">
+                        <button class="status-btn {u.activo ? 'active' : 'inactive'}" on:click={() => toggleEstado(u)}>
+                            {u.activo ? 'ACTIVO' : 'INACTIVO'}
+                        </button>
                     </td>
-                    <td class="acciones">
-                         <button class="btn-toggle" on:click={() => cargarDatosEdicion(u)}>Editar
-
-                         </button>
+                    
+                    <td class="actions-cell">
+                         <div class="btn-group">
+                             <button class="btn-action edit" on:click={() => cargarDatosEdicion(u)}>
+                                Editar
+                             </button>
+                             <button class="btn-action delete" on:click={() => eliminarUsuario(u._id)}>
+                                Eliminar
+                             </button>
+                         </div>
                     </td>
                 </tr>
                 {/each}
@@ -286,69 +261,165 @@
 </div>
 
 <style>
-  .users-container { max-width: 1100px; margin: 0 auto; padding: 20px; font-family: 'Segoe UI', sans-serif; }
-  .header-section { margin-bottom: 30px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
-  .header-section h2 { color: #003366; margin: 0; }
-  .header-section p { color: #666; margin: 5px 0 0 0; }
+  /* --- VARIABLES --- */
+  :root {
+    --primary: #003366; 
+    --primary-hover: #002244;
+    --red-bethel: #cc0000;
+    --red-hover: #a30000;
+    --white: #ffffff;
+    --bg-light: #f4f4f9;
+    --border: #e5e7eb;
+    --radius: 12px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
 
-  .layout { display: grid; grid-template-columns: 1fr 1.8fr; gap: 30px; align-items: start; }
-  
-  .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  .card.editando { border: 2px solid #ffcc00; background: #fffdf9; position: sticky; top: 20px; }
-  
-  h3 { margin: 0 0 20px 0; color: #333; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+  .page-container {
+    max-width: 1200px; margin: 0 auto; padding: 20px;
+    font-family: 'Segoe UI', sans-serif; color: #333;
+  }
 
+  /* --- HEADER --- */
+  .header-flex { margin-bottom: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 15px; }
+  .page-title { margin: 0; color: var(--primary); font-size: 1.5rem; font-weight: 800; }
+  .subtitle { margin: 5px 0 0 0; color: #666; font-size: 0.9rem; }
+
+  /* --- LAYOUT --- */
+  .layout-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; align-items: start; }
+  
+  /* PANELES (Cards) */
+  .panel { 
+    background: var(--white); padding: 25px; border-radius: var(--radius); 
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .form-panel { position: sticky; top: 20px; }
+  .form-panel.editando { border: 2px solid #f59e0b; background: #fffdf5; }
+
+  .form-header h3, .list-header h3 { margin: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+  .list-header { display: flex; justify-content: space-between; align-items: center; }
+  
   /* FORMULARIO */
   .form-group { margin-bottom: 15px; }
   .row-group { display: flex; gap: 15px; }
-  .form-group.half { flex: 1; }
+  .half { flex: 1; }
   
-  label { display: block; font-weight: 600; font-size: 0.85rem; color: #555; margin-bottom: 5px; }
-  input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
-  input:focus, select:focus { border-color: #003366; outline: none; }
+  label { display: block; font-weight: 700; font-size: 0.85rem; color: #555; margin-bottom: 5px; }
+  .hint { font-weight: normal; font-size: 0.75rem; color: #888; }
+
+  input, select { 
+    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; 
+    box-sizing: border-box; font-size: 0.95rem; background: #f9fafb; transition: 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--primary); outline: none; background: white; box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1); }
+
+  /* BOTONES PILL (Formulario) */
+  .btn-pill {
+    padding: 10px 20px; border-radius: 50px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; border: none; font-size: 0.95rem; text-align: center;
+  }
+  .btn-solid-blue { background: var(--primary); color: white; }
+  .btn-solid-blue:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+  .btn-outline-red { background: transparent; border: 1px solid var(--red-bethel); color: var(--red-bethel); }
+  .btn-outline-red:hover { background: #fff5f5; }
+
+  .btn-text { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.9rem; text-decoration: underline; }
+  .full-width { width: 100%; margin-top: 10px; }
+
+  /* --- TABLA (Desktop) --- */
+  .table-container { width: 100%; }
+  .custom-table { width: 100%; border-collapse: collapse; }
   
-  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-  .btn-save { background: #003366; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-  .btn-save:hover { background: #002244; }
-  .btn-cancel { background: #eee; color: #333; padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-  .btn-cancel:hover { background: #ddd; }
+  .custom-table th { 
+    text-align: left; color: var(--primary); font-size: 0.8rem; 
+    padding: 12px; border-bottom: 2px solid #eee; text-transform: uppercase; 
+  }
+  .custom-table td { padding: 15px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .text-right { text-align: right; }
 
-  /* LISTA */
-  .header-list { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-  .btn-refresh { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #003366; }
+  /* Estilos de Fila */
+  .active-row { background-color: #fffbeb; } 
 
-  .table-responsive { overflow-x: auto; }
-  .user-table { width: 100%; border-collapse: collapse; }
-  .user-table th { text-align: left; color: #777; font-size: 0.8rem; padding: 10px; border-bottom: 2px solid #eee; text-transform: uppercase; }
-  .user-table td { padding: 12px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-  
-  /* FILAS */
-  .user-info { display: flex; flex-direction: column; }
-  .user-name { font-weight: bold; color: #333; }
-  .user-email { font-size: 0.85rem; color: #666; }
-  .user-phone { font-size: 0.8rem; color: #28a745; margin-top: 2px; }
-
-  tr.seleccionado { background: #fff8e1; }
-  tr.inactivo td { opacity: 0.5; } /* Usuario deshabilitado se ve tenue */
+  .user-block { display: flex; flex-direction: column; }
+  .name { font-weight: 700; color: #333; font-size: 1rem; }
+  .email { font-size: 0.85rem; color: #666; }
+  .phone { font-size: 0.8rem; color: #888; margin-top: 2px; }
 
   /* BADGES */
-  .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
-  .badge.admin { background: #e3f2fd; color: #0d47a1; }
-  .badge.asesor { background: #e8f5e9; color: #2e7d32; }
+  .role-badge { 
+    padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;
+  }
+  .role-badge.admin { background: #e0e7ff; color: #3730a3; }
+  .role-badge.asesor { background: #f3f4f6; color: #374151; }
 
-  /* TOGGLE ESTADO */
-  .btn-toggle { padding: 4px 10px; border-radius: 20px; border: none; font-size: 0.75rem; font-weight: bold; cursor: pointer; width: 80px; }
-  .btn-toggle.on { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-  .btn-toggle.off { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  /* STATUS TOGGLE */
+  .status-btn {
+    padding: 4px 12px; border-radius: 20px; border: 1px solid transparent; 
+    font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: 0.2s;
+  }
+  .status-btn.active { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+  .status-btn.active:hover { background: #bbf7d0; }
+  
+  .status-btn.inactive { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+  .status-btn.inactive:hover { background: #fecaca; }
 
-  /* ACCIONES */
-  .btn-icon { border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: 0.2s; }
-  .btn-icon.edit { background: #fff3cd; color: #856404; }
-  .btn-icon.del { background: #f8d7da; color: #721c24; }
-  .btn-icon:hover { transform: scale(1.1); }
+  /* BOTONES DE ACCIÓN (En Tabla) */
+  .btn-group { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-action {
+    padding: 6px 14px; border-radius: 6px; border: none; font-size: 0.8rem; 
+    font-weight: 700; cursor: pointer; transition: 0.2s;
+  }
+  .btn-action.edit { background: #f3f4f6; color: #374151; }
+  .btn-action.edit:hover { background: #e5e7eb; color: var(--primary); }
+  
+  .btn-action.delete { background: white; border: 1px solid #fee2e2; color: var(--red-bethel); }
+  .btn-action.delete:hover { background: #fee2e2; }
 
-  @media (max-width: 800px) {
-    .layout { grid-template-columns: 1fr; }
-    .card.editando { position: relative; top: 0; }
+  .loading { text-align: center; padding: 40px; color: #999; }
+
+  /* --- RESPONSIVE TOTAL (Mobile Card View) --- */
+  @media (max-width: 900px) {
+    .layout-grid { grid-template-columns: 1fr; } 
+    
+    /* Mover el formulario ARRIBA en celular */
+    .form-panel { position: relative; top: 0; order: -1; margin-bottom: 25px; } 
+
+    /* TRANSFORMAR TABLA EN TARJETAS */
+    .custom-table, .custom-table tbody, .custom-table tr, .custom-table td {
+        display: block; width: 100%; box-sizing: border-box;
+    }
+    
+    .custom-table thead { display: none; } /* Ocultar cabeceras */
+
+    .custom-table tr {
+        background: white; border: 1px solid #eee; border-radius: 12px;
+        margin-bottom: 15px; padding: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    .custom-table td {
+        padding: 8px 0; border: none; display: flex; justify-content: space-between; align-items: center;
+        text-align: right;
+    }
+
+    /* Etiquetas para móvil (Simular columnas) */
+    .custom-table td::before {
+        content: attr(data-label);
+        font-weight: 700; font-size: 0.85rem; color: #888;
+    }
+
+    /* Ajustes específicos de celda móvil */
+    .user-block { text-align: right; }
+    .actions-cell { 
+        margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0; 
+        justify-content: center; /* Centrar botones */
+    }
+    .custom-table td.actions-cell::before { content: ""; display: none; } /* Sin etiqueta en botones */
+
+    /* Botones grandes en móvil */
+    .btn-group { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-action { padding: 12px; font-size: 0.9rem; border-radius: 8px; width: 100%; }
+    .btn-action.edit { background: #e0e7ff; color: #3730a3; } /* Azul claro para editar */
+    .btn-action.delete { background: #fee2e2; color: #991b1b; border: none; } /* Rojo claro para borrar */
   }
 </style>

@@ -2,7 +2,6 @@
   import { onMount, createEventDispatcher } from "svelte";
   import axios from "axios";
 
-
   const dispatch = createEventDispatcher();
   let vehiculos = [];
   let vehiculosFiltrados = [];
@@ -59,6 +58,10 @@
 <div class="catalogo-wrapper">
   
   <header class="hero-blue">
+    <button class="btn-pill btn-ghost-light asesor-pos" on:click={irLogin}>
+       🔒 Soy Asesor
+    </button>
+
     <div class="hero-content-centered">
       
       <div class="brand-header-text">
@@ -71,23 +74,20 @@
             <input type="text" placeholder="Busca por marca (ej: Toyota)..." bind:value={busqueda} on:input={filtrarVehiculos} />
             <button class="btn-search">🔍</button>
         </div>
-        
-       
       </div>
- <button class="btn-hero-contact" on:click={irContacto}>
-            📞 Contáctanos
-        </button>
+
+      <button class="btn-pill btn-ghost-light" on:click={irContacto}>
+          📞 Contáctanos
+      </button>
     </div>
-    
-    <button class="btn-acceso" on:click={irLogin}>Soy Asesor 🔒</button>
   </header>
 
   <nav class="filtros-container">
     <div class="filtros">
-      <button class="{filtroActual === 'todos' ? 'activo' : ''}" on:click={() => cambiarFiltro('todos')}>Todo el Stock</button>
-      <button class="{filtroActual === 'bolivia' ? 'activo' : ''}" on:click={() => cambiarFiltro('bolivia')}>🇧🇴 En Bolivia</button>
-      <button class="{filtroActual === 'chile' ? 'activo' : ''}" on:click={() => cambiarFiltro('chile')}>🇨🇱 En Tránsito</button>
-      <button class="{filtroActual === 'usa' ? 'activo' : ''}" on:click={() => cambiarFiltro('usa')}>🇺🇸 Subasta USA</button>
+      <button class="btn-pill {filtroActual === 'todos' ? 'btn-solid-blue' : 'btn-outline-blue'}" on:click={() => cambiarFiltro('todos')}>Todo el Stock</button>
+      <button class="btn-pill {filtroActual === 'bolivia' ? 'btn-solid-blue' : 'btn-outline-blue'}" on:click={() => cambiarFiltro('bolivia')}>🇧🇴 En Bolivia</button>
+      <button class="btn-pill {filtroActual === 'chile' ? 'btn-solid-blue' : 'btn-outline-blue'}" on:click={() => cambiarFiltro('chile')}>🇨🇱 En Tránsito</button>
+      <button class="btn-pill {filtroActual === 'usa' ? 'btn-solid-blue' : 'btn-outline-blue'}" on:click={() => cambiarFiltro('usa')}>🇺🇸 Subasta USA</button>
     </div>
   </nav>
 
@@ -97,7 +97,7 @@
     {:else if vehiculosFiltrados.length === 0}
       <div class="mensaje-vacio">
         <p>No se encontraron vehículos.</p>
-        <button class="btn-reset" on:click={() => { busqueda=''; filtroActual='todos'; filtrarVehiculos(); }}>Ver todos</button>
+        <button class="btn-pill btn-outline-blue" on:click={() => { busqueda=''; filtroActual='todos'; filtrarVehiculos(); }}>Ver todos</button>
       </div>
     {:else}
       {#each vehiculosFiltrados as auto}
@@ -124,7 +124,7 @@
                     <span class="moneda-mini">{obtenerMoneda(auto)}</span>
                     <span class="precio-valor">{formatearPrecio(auto)}</span>
                 </div>
-                <button class="btn-ver">Ver Detalles →</button>
+                <button class="btn-pill btn-outline-blue sm">Ver Detalles →</button>
             </div>
             {#if auto.situacion_legal}
               <div class="legal-footer {auto.situacion_legal.includes('Despachado') ? 'ok' : 'pending'}">{auto.situacion_legal.split('(')[0]}</div>
@@ -143,21 +143,42 @@
             </div>
             <p class="footer-desc">Especialistas en importación de vehículos de USA y trámites aduaneros.</p>
         </div>
-        <div class="footer-col">
+
+        <div class="footer-col center-content">
             <h4>Navegación</h4>
-            <ul>
-                <li><a href="#" on:click|preventDefault={() => window.scrollTo({top:0, behavior:'smooth'})}>Inicio</a></li>
-                <li><a href="#" on:click|preventDefault={() => cambiarFiltro('bolivia')}>Stock en Bolivia</a></li>
-                <li><button class="link-btn" on:click={irLogin}>Acceso Asesores</button></li>
+            <ul class="footer-list">
+                <li>
+                    <a href="#" class="btn-pill btn-ghost-light" on:click|preventDefault={() => window.scrollTo({top:0, behavior:'smooth'})}>
+                        Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="btn-pill btn-ghost-light" on:click|preventDefault={() => cambiarFiltro('bolivia')}>
+                        Stock en Bolivia
+                    </a>
+                </li>
+                <li>
+                    <button class="btn-pill btn-ghost-light login-highlight" on:click={irLogin}>
+                        Acceso Asesores
+                    </button>
+                </li>
             </ul>
         </div>
-        <div class="footer-col">
+
+        <div class="footer-col center-content">
             <h4>Contáctanos</h4>
-            <div class="contact-item" style="cursor: pointer;" on:click={irContacto}>
-                <span class="icon">📍</span>
-                <span>Cochabamba (Ver Mapa)</span>
-            </div>
-            <div class="contact-item"><span class="icon">📞</span><span>+591 62512418</span></div>
+            <ul class="footer-list">
+                <li>
+                    <button class="btn-pill btn-ghost-light" on:click={irContacto}>
+                        📍 Ver Ubicación
+                    </button>
+                </li>
+                <li>
+                    <a href="https://wa.me/59162512418" target="_blank" class="btn-pill btn-ghost-light">
+                        📞 +591 62512418
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
     <div class="footer-bottom"><p>© 2026 BETHEL MOTORS.</p></div>
@@ -170,39 +191,72 @@
 </div>
 
 <style>
+  /* --- ESTILOS MAESTROS DE BOTONES (PILL SHAPE) --- */
+  
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px; 
+    min-width: 140px; /* Un poco más ancho para que quepa "Ver Ubicación" */
+    border-radius: 50px; 
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent; 
+  }
+
+  .btn-pill:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .btn-pill:active { transform: translateY(0); box-shadow: none; }
+
+  /* GHOST LIGHT (Footer/Hero) */
+  .btn-ghost-light { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.4); }
+  .btn-ghost-light:hover { background: white; color: #003366; border-color: white; box-shadow: 0 0 15px rgba(255,255,255,0.4); }
+
+  /* OUTLINE BLUE (Cards) */
+  .btn-outline-blue { background: transparent; color: #003366; border-color: #003366; }
+  .btn-outline-blue:hover { background: #003366; color: white; }
+
+  /* SOLID BLUE (Filtros Activos) */
+  .btn-solid-blue { background: #003366; color: white; border-color: #003366; }
+  .btn-solid-blue:hover { background: #002244; }
+
+  .sm { min-width: auto; padding: 4px 12px; font-size: 0.8rem; }
+  
+  .login-highlight { border-color: #ffd700; color: #ffd700; }
+  .login-highlight:hover { background: #ffd700; color: #000; }
+
+  /* --- CSS LAYOUT --- */
   .catalogo-wrapper { background: #f3f5f7; min-height: 100vh; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; }
+  
   .hero-blue { background: linear-gradient(135deg, #003366 0%, #001a33 100%); color: white; padding: 50px 20px; text-align: center; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center; }
+  .asesor-pos { position: absolute; top: 20px; right: 20px; } 
+
   .hero-content-centered { width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
   .brand-header-text h1 { margin: 10px 0 0 0; font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
   .brand-header-text p { margin: 10px 0 0 0; color: #e0e0e0; font-size: clamp(1rem, 2vw, 1.3rem); font-weight: 500; }
   
-  /* ESTILOS NUEVOS PARA EL HERO */
   .actions-row { display: flex; flex-wrap: wrap; gap: 15px; width: 100%; justify-content: center; align-items: center; margin-top: 20px; }
   .search-bar { flex: 1; min-width: 280px; max-width: 500px; display: flex; background: white; border-radius: 50px; padding: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
   .search-bar input { flex: 1; border: none; padding: 14px 25px; border-radius: 30px; outline: none; font-size: 1.1rem; color: #333; }
   .btn-search { background: #003366; color: white; border: none; width: 55px; height: 55px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
   
-  /* BOTÓN EN EL HEADER */
-  .btn-hero-contact {
-    background: transparent; border: 2px solid rgba(255,255,255,0.6); color: white;
-    padding: 12px 25px; border-radius: 30px; font-weight: bold; cursor: pointer;
-    font-size: 1rem; transition: 0.3s;
-  }
-  .btn-hero-contact:hover { background: white; color: #003366; }
-
-  .btn-acceso { position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 18px; border-radius: 30px; cursor: pointer; font-size: 0.85rem; }
-
   .filtros-container { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; padding: 15px 0; }
   .filtros { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 0 10px; max-width: 1200px; margin: 0 auto; }
-  .filtros button { background: #f8f9fa; border: 1px solid #eee; padding: 8px 18px; border-radius: 25px; cursor: pointer; font-weight: 600; color: #555; }
-  .filtros button.activo { background: #003366; color: white; border-color: #003366; }
   
   .grid-autos { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; max-width: 1250px; margin: 30px auto; padding: 0 20px; flex: 1; }
-  .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); cursor: pointer; display: flex; flex-direction: column; }
+  .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); cursor: pointer; display: flex; flex-direction: column; transition: transform 0.2s; }
+  .card:hover { transform: translateY(-5px); }
+  
   .img-wrapper { height: 240px; background: #e9ecef; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
   .badge { position: absolute; top: 15px; right: 15px; padding: 6px 12px; border-radius: 6px; color: white; font-size: 0.75rem; font-weight: bold; }
   .badge.bo { background: rgba(40, 167, 69, 0.9); } .badge.usa { background: rgba(0, 51, 102, 0.9); } .badge.cl { background: rgba(255, 153, 0, 0.9); }
+  
   .card-info { padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
   .header-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
   .header-info h3 { margin: 0; font-size: 1.15rem; color: #222; font-weight: 700; }
@@ -210,7 +264,7 @@
   .detalles-mini { font-size: 0.85rem; color: #777; margin-bottom: 15px; }
   .bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 1px solid #f0f0f0; }
   .precio-valor { font-size: 1.4rem; font-weight: 800; color: #003366; }
-  .btn-ver { background: #eef2f6; color: #003366; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85rem; }
+  
   .legal-footer { margin-top: 12px; font-size: 0.7rem; font-weight: bold; text-align: center; padding: 4px; border-radius: 4px; }
   .legal-footer.ok { background: #d4edda; color: #155724; } .legal-footer.pending { background: #fff3cd; color: #856404; }
   
@@ -218,43 +272,35 @@
   .footer-container { max-width: 1200px; margin: 0 auto; padding: 60px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; }
   .footer-brand h3 { color: white; font-weight: 800; margin: 15px 0 10px 0; font-size: 1.3rem; }
   .footer-col h4 { color: white; margin-bottom: 25px; border-bottom: 3px solid #28a745; display: inline-block; padding-bottom: 5px; }
-  .footer-col ul { list-style: none; padding: 0; margin: 0; }
-  .footer-col ul li { margin-bottom: 12px; }
-  .link-btn { background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 0; font-size: 1rem; }
-  .link-btn:hover { color: #28a745; }
-  .contact-item { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  
+  /* Alineación central para las columnas de botones */
+  .center-content { display: flex; flex-direction: column; align-items: flex-start; }
+  
+  .footer-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
   .footer-bottom { background: #001122; text-align: center; padding: 25px; }
   
-  /* ESTILOS BOTÓN FLOTANTE */
+  .mensaje, .mensaje-vacio { text-align: center; width: 100%; grid-column: 1/-1; padding: 40px; color: #666; font-size: 1.1rem; }
+  .mensaje-vacio { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+  /* ESTILOS BOTÓN FLOTANTE (FAB) */
   .btn-flotante {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background-color: #28a745; /* Verde tipo WhatsApp */
-    color: white;
-    border: none;
-    border-radius: 50px;
-    padding: 15px 25px;
-    font-size: 1rem;
-    font-weight: bold;
+    position: fixed; bottom: 30px; right: 30px;
+    background-color: #28a745; color: white;
+    border: none; border-radius: 50px;
+    padding: 15px 25px; font-size: 1rem; font-weight: bold;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    cursor: pointer;
-    z-index: 1000; /* Siempre encima */
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    cursor: pointer; z-index: 1000;
+    display: flex; align-items: center; gap: 10px;
     transition: transform 0.3s, box-shadow 0.3s;
   }
-  .btn-flotante:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    background-color: #218838;
-  }
+  .btn-flotante:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); background-color: #218838; }
 
-  @media (max-width: 600px) { 
+  @media (max-width: 768px) { 
     .grid-autos { grid-template-columns: 1fr; } 
-    .footer-container { text-align: center; } 
-    /* En celular, el botón flotante es solo el icono para no tapar */
+    .footer-container { text-align: center; justify-items: center; } 
+    .center-content { align-items: center; } /* Centrar botones en móvil */
+    .footer-list { align-items: center; } /* Centrar lista en móvil */
     .btn-flotante { padding: 15px; border-radius: 50%; width: 60px; height: 60px; justify-content: center; }
+    .hero-content-centered { padding: 0 10px; }
   }
 </style>
